@@ -1,45 +1,58 @@
-// Access the exposed APIs from the preload script
-const { axiosGet, keytarGetPassword, keytarSetPassword, ioConnect } = window.electronAPI;
+const axios = require('axios');
+const keytar = require('keytar');
+const io = require('socket.io-client');
+
 const VERSION = '1.0';
 let socket;
 
+console.log("Renderer script is running!");
+
 // Set up event listener for when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
-    initApp();
+    console.log("Renderer.js: DOM Content Loaded");
+    const appDiv = document.getElementById('app');
+    appDiv.innerHTML = '<h2>Renderer.js is working!</h2>';
+    initApp();  // Initialize the application
 });
 
 // Initialize the application
 async function initApp() {
+    console.log("Initializing the app...");
     const apiKey = await getApiKey();
+    console.log("Retrieved API key:", apiKey);
     if (apiKey) {
         const isValid = await validateApiKey(apiKey);
+        console.log("API key valid:", isValid);
         if (isValid) {
             showMainView();
         } else {
             showApiKeyEntry();
         }
     } else {
+        console.log("No API key found, showing API key entry form.");
         showApiKeyEntry();
     }
 }
 
 // Retrieve the API Key from secure storage
 async function getApiKey() {
-    return await keytarGetPassword('BotOfTheSpecter', 'apiAuthKey');
+    return await keytar.getPassword('BotOfTheSpecter', 'apiAuthKey');
 }
 
 // Save the API Key securely
 async function saveApiKey(apiKey) {
-    await keytarSetPassword('BotOfTheSpecter', 'apiAuthKey', apiKey);
+    await keytar.setPassword('BotOfTheSpecter', 'apiAuthKey', apiKey);
 }
 
 // Validate the API Key by contacting your API server
 async function validateApiKey(apiKey) {
+    console.log("Validating API key...");
     try {
-        const response = await axiosGet('https://api.botofthespecter.com/checkkey', {
+        const response = await axios.get('https://api.botofthespecter.com/checkkey', {
             params: { api_key: apiKey },
             timeout: 5000,
         });
+        console.log("API validation response:", response.data);
         return response.data.status === 'Valid API Key';
     } catch (error) {
         console.error('Error validating API Key:', error);
@@ -117,7 +130,7 @@ async function connectToWebSocket() {
         console.error('API Key not found.');
         return;
     }
-    socket = ioConnect('wss://websocket.botofthespecter.com', {
+    socket = io('wss://websocket.botofthespecter.com', {
         secure: true,
         reconnection: true,
         reconnectionAttempts: Infinity,
