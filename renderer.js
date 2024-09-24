@@ -84,13 +84,15 @@ async function handleApiKeySubmit(event) {
     event.preventDefault();
     const apiKey = document.getElementById('apiKey').value.trim();
     const messageDiv = document.getElementById('message');
-    messageDiv.textContent = 'Validating API Key...';
+    messageDiv.textContent = '';
     const isValid = await validateApiKey(apiKey);
     if (isValid) {
         await saveApiKey(apiKey);
+        messageDiv.className = 'help is-success';
         messageDiv.textContent = 'API Key is valid!';
-        showMainView();
+        setTimeout(showMainView, 1000);
     } else {
+        messageDiv.className = 'help is-danger';
         messageDiv.textContent = 'Invalid API Key. Please try again.';
     }
 }
