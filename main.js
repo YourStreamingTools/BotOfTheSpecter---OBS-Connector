@@ -14,6 +14,7 @@ function createWindow() {
             contextIsolation: false,
             enableRemoteModule: true,
         },
+        icon: path.join(__dirname, 'assets/icons/app-icon.png')
     });
     win.loadURL(url.format({
         pathname: path.join(__dirname, 'index.html'),
