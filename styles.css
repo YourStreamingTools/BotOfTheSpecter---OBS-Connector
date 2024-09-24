@@ -1,1 +1,29 @@
-/* CUSTOM CSS IF WE NEED IT */
+html,
+body {
+    height: 100%;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100%;
+}
+
+.section {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+.title {
+    text-align: center;
+}
+
+.box {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+#message {
+    margin-top: 1rem;
+}
