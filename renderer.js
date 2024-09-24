@@ -58,13 +58,23 @@ async function validateApiKey(apiKey) {
 function showApiKeyEntry() {
     const appDiv = document.getElementById('app');
     appDiv.innerHTML = `
-        <h1>BotOfTheSpecter OBS Connector</h1>
-        <form id="api-key-form">
-            <label for="apiKey">API Auth Key:</label>
-            <input type="text" id="apiKey" name="apiKey" required />
-            <button type="submit">Validate Key</button>
-        </form>
-        <div id="message"></div>
+        <section class="section">
+            <h1 class="title">BotOfTheSpecter - OBS Connector</h1>
+            <div class="box">
+                <form id="api-key-form">
+                    <div class="field">
+                        <label class="label" for="apiKey">API Auth Key</label>
+                        <div class="control">
+                            <input class="input" type="text" id="apiKey" name="apiKey" placeholder="Enter your API Key" required />
+                        </div>
+                    </div>
+                    <div class="control">
+                        <button class="button is-primary" type="submit">Validate Key</button>
+                    </div>
+                </form>
+                <p id="message" class="help"></p>
+            </div>
+        </section>
     `;
     document.getElementById('api-key-form').addEventListener('submit', handleApiKeySubmit);
 }
@@ -89,11 +99,15 @@ async function handleApiKeySubmit(event) {
 function showMainView() {
     const appDiv = document.getElementById('app');
     appDiv.innerHTML = `
-        <h1>BotOfTheSpecter OBS Connector</h1>
-        <div id="status">
-            <p>WebSocket Status: <span id="websocket-status">Disconnected</span></p>
-        </div>
-        <div id="logs"></div>
+        <section class="section">
+            <h1 class="title">BotOfTheSpecter OBS Connector</h1>
+            <div id="status" class="content">
+                <p><strong>WebSocket Status:</strong> <span id="websocket-status">Disconnected</span></p>
+            </div>
+            <div id="logs" class="content">
+                <h2 class="subtitle">Logs</h2>
+            </div>
+        </section>
     `;
     updateStatus('Disconnected');
     // Start connection to the WebSocket server
