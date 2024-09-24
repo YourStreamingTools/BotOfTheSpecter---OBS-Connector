@@ -111,7 +111,7 @@ function showMainView() {
         <section class="section">
             <h1 class="title">BotOfTheSpecter OBS Connector</h1>
             <div id="status" class="content">
-                <p><strong>WebSocket Status:</strong> <span id="websocket-status">Disconnected</span></p>
+                <p>WebSocket Status: <span id="websocket-status">Disconnected</span></p>
             </div>
             <div id="logs" class="content">
                 <h2 class="subtitle">Logs</h2>
