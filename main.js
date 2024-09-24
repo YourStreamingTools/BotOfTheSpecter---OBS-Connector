@@ -1,6 +1,9 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 
+// Disable hardware acceleration
+app.disableHardwareAcceleration();
+
 function createWindow() {
     const win = new BrowserWindow({
         width: 800,
@@ -9,7 +12,6 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
             nodeIntegration: false,
-            enableRemoteModule: false,
         },
     });
     win.loadFile('index.html');
