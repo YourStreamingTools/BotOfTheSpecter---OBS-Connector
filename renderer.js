@@ -1,7 +1,5 @@
-// Import required modules
-const axios = require('axios');
-const keytar = require('keytar');
-const io = require('socket.io-client');
+// Access the exposed APIs from the preload script
+const { axiosGet, keytarGetPassword, keytarSetPassword, ioConnect } = window.electronAPI;
 const VERSION = '1.0';
 let socket;
 
@@ -27,18 +25,18 @@ async function initApp() {
 
 // Retrieve the API Key from secure storage
 async function getApiKey() {
-    return await keytar.getPassword('BotOfTheSpecter', 'apiAuthKey');
+    return await keytarGetPassword('BotOfTheSpecter', 'apiAuthKey');
 }
 
 // Save the API Key securely
 async function saveApiKey(apiKey) {
-    await keytar.setPassword('BotOfTheSpecter', 'apiAuthKey', apiKey);
+    await keytarSetPassword('BotOfTheSpecter', 'apiAuthKey', apiKey);
 }
 
 // Validate the API Key by contacting your API server
 async function validateApiKey(apiKey) {
     try {
-        const response = await axios.get('https://api.botofthespecter.com/checkkey', {
+        const response = await axiosGet('https://api.botofthespecter.com/checkkey', {
             params: { api_key: apiKey },
             timeout: 5000,
         });
@@ -119,7 +117,7 @@ async function connectToWebSocket() {
         console.error('API Key not found.');
         return;
     }
-    socket = io('wss://websocket.botofthespecter.com', {
+    socket = ioConnect('wss://websocket.botofthespecter.com', {
         secure: true,
         reconnection: true,
         reconnectionAttempts: Infinity,
