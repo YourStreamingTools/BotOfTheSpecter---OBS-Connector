@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
 const url = require('url');
 
@@ -20,6 +20,44 @@ function createWindow() {
         protocol: 'file:',
         slashes: true,
     }));
+
+    // Create the custom menu
+    const menu = Menu.buildFromTemplate([
+        {
+            label: 'File',
+            submenu: [
+                { label: 'Exit', click: () => { app.quit(); } },
+            ]
+        },
+        {
+            label: 'View',
+            submenu: [
+                { role: 'reload' },
+                { label: 'Force Reload', accelerator: 'CmdOrCtrl+Shift+R', click: () => { win.webContents.reloadIgnoringCache(); }},
+                { role: 'toggledevtools' }
+            ]
+        },
+        {
+            label: 'Window',
+            submenu: [
+                { role: 'minimize' },
+                { role: 'close' },
+            ]
+        },
+        {
+            label: 'Help',
+            submenu: [
+                {
+                    label: 'About',
+                    click: () => {
+                        console.log('About clicked');
+                    }
+                }
+            ]
+        }
+    ]);
+    // Set the application menu
+    Menu.setApplicationMenu(menu);
 }
 
 app.whenReady().then(createWindow);
