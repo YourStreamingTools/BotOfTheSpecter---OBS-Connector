@@ -2,10 +2,6 @@
 const axios = require('axios');
 const keytar = require('keytar');
 const io = require('socket.io-client');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const ini = require('ini');
 const VERSION = '1.0';
 let socket;
 
@@ -133,15 +129,18 @@ async function connectToWebSocket() {
     });
     socket.on('connect', () => {
         console.log('Connected to WebSocket server.');
+        // Emit the 'REGISTER' event with 'code' and 'name'
         socket.emit('REGISTER', { code: apiKey, name: `OBS Connector V${VERSION}` });
         updateStatus('Connected');
         registerEventHandlers();
     });
     socket.on('SUCCESS', (data) => {
         console.log('WebSocket registration successful:', data);
+        logMessage('WebSocket registration successful.');
     });
     socket.on('ERROR', (error) => {
         console.error('WebSocket registration failed:', error);
+        logMessage('WebSocket registration failed.');
     });
     socket.on('disconnect', (reason) => {
         console.warn('Disconnected from WebSocket server:', reason);
