@@ -146,6 +146,11 @@ async function connectToWebSocket() {
         console.warn('Disconnected from WebSocket server:', reason);
         updateStatus('Disconnected');
     });
+    socket.on('connect_error', (error) => {
+        console.error('WebSocket connection error:', error);
+        logMessage('WebSocket connection error.');
+        updateStatus('Connection Error');
+    });
 }
 
 // Register event handlers for WebSocket events
