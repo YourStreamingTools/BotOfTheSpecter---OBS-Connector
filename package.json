@@ -4,10 +4,10 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron-forge start",
+    "start": "electron-forge start -- --disable-gpu --disable-gpu-compositing --disable-d3d11 --disable-d3d11-debug-layer --disable-es3-gl-context",
     "package": "electron-forge package",
-    "make": "electron-forge make"
+    "make": "electron-forge make",
+    "postinstall": "electron-rebuild"
   },
   "repository": {
     "type": "git",
