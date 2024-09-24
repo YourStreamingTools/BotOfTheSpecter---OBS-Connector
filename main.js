@@ -1,27 +1,25 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
+const url = require('url');
 
 // Disable hardware acceleration
 app.disableHardwareAcceleration();
-
-// Additional command-line switches to disable GPU features
-app.commandLine.appendSwitch('disable-gpu');
-app.commandLine.appendSwitch('disable-gpu-compositing');
-app.commandLine.appendSwitch('disable-d3d11');
-app.commandLine.appendSwitch('disable-d3d11-debug-layer');
-app.commandLine.appendSwitch('disable-es3-gl-context');
 
 function createWindow() {
     const win = new BrowserWindow({
         width: 800,
         height: 600,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
-            contextIsolation: true,
-            nodeIntegration: false,
+            nodeIntegration: true,
+            contextIsolation: false,
+            enableRemoteModule: true,
         },
     });
-    win.loadFile(path.join(__dirname, 'index.html'));
+    win.loadURL(url.format({
+        pathname: path.join(__dirname, 'index.html'),
+        protocol: 'file:',
+        slashes: true,
+    }));
 }
 
 app.whenReady().then(createWindow);
