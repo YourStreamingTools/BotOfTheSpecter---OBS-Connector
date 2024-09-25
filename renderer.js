@@ -5,7 +5,7 @@ const OBSWebSocket = require('obs-websocket-js');
 
 const VERSION = '1.0';
 let socket;
-let obs = new OBSWebSocket();
+const obs = new OBSWebSocket();
 
 console.log("Renderer script is running!");
 
