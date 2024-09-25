@@ -21,23 +21,9 @@ function loadOBSSettings() {
     return null;
 }
 
-// Automatically connect to OBS using saved settings on startup
-async function connectToOBSOnStartup() {
-    const settings = loadOBSSettings();
-    if (settings) {
-        const obsUrl = settings.obsUrl;
-        const obsPort = settings.obsPort;
-        const obsPassword = settings.obsPassword;
-        const fullWebSocketURL = `${obsUrl}:${obsPort}`;
-        console.log(`Connecting to OBS WebSocket at ${fullWebSocketURL}`);
-        await connectToOBS(fullWebSocketURL, obsPassword);
-    }
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Renderer.js: DOM Content Loaded");
     initApp();  // Initialize the application
-    connectToOBSOnStartup();  // Automatically connect to OBS using saved settings
 });
 
 // Initialize the application
@@ -131,6 +117,7 @@ async function handleApiKeySubmit(event) {
 
 // Display the main application view
 async function showMainView() {
+    const settings = loadOBSSettings();
     const appDiv = document.getElementById('app');
     appDiv.innerHTML = `
         <section class="section">
@@ -142,55 +129,20 @@ async function showMainView() {
             <div id="logs" class="content">
                 <h2 class="subtitle">Logs</h2>
             </div>
-            <div class="box">
-                <form id="obs-connection-form">
-                    <div class="field">
-                        <label class="label" for="obsUrl">OBS WebSocket URL</label>
-                        <div class="control">
-                            <input class="input" type="text" id="obsUrl" name="obsUrl" placeholder="ws://localhost" value="ws://localhost" required />
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label" for="obsPort">Port</label>
-                        <div class="control">
-                            <input class="input" type="number" id="obsPort" name="obsPort" placeholder="4455" value="4455" required />
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="label" for="obsPassword">Password</label>
-                        <div class="control">
-                            <input class="input" type="password" id="obsPassword" name="obsPassword" placeholder="OBS WebSocket Password (optional)" />
-                        </div>
-                    </div>
-                    <div class="control">
-                        <button class="button is-primary" type="submit">Connect to OBS</button>
-                    </div>
-                </form>
-                <p id="obs-message" class="help"></p>
-            </div>
         </section>
     `;
     updateStatus('Disconnected', 'websocket-status');
     updateStatus('Disconnected', 'obs-status');
     // Start connection to the WebSocket server
     connectToWebSocket();
-    // Handle the OBS connection form
-    document.getElementById('obs-connection-form').addEventListener('submit', handleOBSConnectionFormSubmit);
-}
-
-// Handle OBS connection form submission
-async function handleOBSConnectionFormSubmit(event) {
-    event.preventDefault();
-    const obsUrl = document.getElementById('obsUrl').value.trim();
-    const obsPort = document.getElementById('obsPort').value.trim();
-    const obsPassword = document.getElementById('obsPassword').value.trim();
-    const fullWebSocketURL = `${obsUrl}:${obsPort}`;
-    console.log(`Connecting to OBS WebSocket at ${fullWebSocketURL}`);
-    // Connect to OBS using the provided details
-    const isConnected = await connectToOBS(fullWebSocketURL, obsPassword);
-    if (isConnected) {
-        // Hide the OBS connection form after successful connection
-        document.getElementById('obs-connection-form').style.display = 'none';
+    // Connect to OBS
+    if (settings) {
+        const obsUrl = settings.obsUrl;
+        const obsPort = settings.obsPort;
+        const obsPassword = settings.obsPassword;
+        const fullWebSocketURL = `${obsUrl}:${obsPort}`;
+        console.log(`Connecting to OBS WebSocket at ${fullWebSocketURL}`);
+        await connectToOBS(fullWebSocketURL, obsPassword);
     }
 }
 
