@@ -1,7 +1,9 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 const path = require('path');
 const url = require('url');
 let settingsWindow;
+let logsWindow;
+let logs = [];
 
 // Disable hardware acceleration
 app.disableHardwareAcceleration();
@@ -23,14 +25,13 @@ function createWindow() {
         protocol: 'file:',
         slashes: true,
     }));
-
     // Create the custom menu
     const menu = Menu.buildFromTemplate([
         {
             label: 'File',
             submenu: [
                 { label: 'Settings', click: createSettingsWindow },
-                { label: 'Exit', click: () => { app.quit(); } },
+                { label: 'Logs', click: createLogsWindow },
             ]
         },
         {
@@ -58,7 +59,6 @@ function createSettingsWindow() {
         settingsWindow.focus();
         return;
     }
-
     settingsWindow = new BrowserWindow({
         width: 400,
         height: 300,
@@ -67,17 +67,47 @@ function createSettingsWindow() {
             contextIsolation: false,
         }
     });
-
     settingsWindow.loadURL(url.format({
         pathname: path.join(__dirname, 'settings.html'),
         protocol: 'file:',
         slashes: true,
     }));
-
     settingsWindow.on('closed', () => {
         settingsWindow = null;
     });
 }
+
+// Create a new logs window
+function createLogsWindow() {
+    if (logsWindow) {
+        logsWindow.focus();
+        return;
+    }
+    logsWindow = new BrowserWindow({
+        width: 600,
+        height: 400,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+        }
+    });
+    logsWindow.loadURL(url.format({
+        pathname: path.join(__dirname, 'logs.html'),
+        protocol: 'file:',
+        slashes: true,
+    }));
+    logsWindow.on('closed', () => {
+        logsWindow = null;
+    });
+}
+
+// Listen for logs from renderer process
+ipcMain.on('update-logs', (event, logMessages) => {
+    logs = logMessages;
+    if (logsWindow) {
+        logsWindow.webContents.send('update-logs', logs);
+    }
+});
 
 app.whenReady().then(createWindow);
 
