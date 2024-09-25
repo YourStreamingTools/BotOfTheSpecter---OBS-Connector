@@ -1,9 +1,11 @@
 const axios = require('axios');
 const keytar = require('keytar');
 const io = require('socket.io-client');
+const OBSWebSocket = require('obs-websocket-js');
 
 const VERSION = '1.0';
 let socket;
+let obs = new OBSWebSocket();
 
 console.log("Renderer script is running!");
 
@@ -105,22 +107,84 @@ async function handleApiKeySubmit(event) {
 }
 
 // Display the main application view
-function showMainView() {
+async function showMainView() {
     const appDiv = document.getElementById('app');
     appDiv.innerHTML = `
         <section class="section">
             <h1 class="title">BotOfTheSpecter OBS Connector</h1>
             <div id="status" class="content">
                 <p>WebSocket Status: <span id="websocket-status">Disconnected</span></p>
+                <p>OBS Status: <span id="obs-status">Disconnected</span></p>
             </div>
             <div id="logs" class="content">
                 <h2 class="subtitle">Logs</h2>
             </div>
+            <div class="box">
+                <form id="obs-connection-form">
+                    <div class="field">
+                        <label class="label" for="obsUrl">OBS WebSocket URL</label>
+                        <div class="control">
+                            <input class="input" type="text" id="obsUrl" name="obsUrl" placeholder="ws://localhost" value="ws://localhost" required />
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label" for="obsPort">Port</label>
+                        <div class="control">
+                            <input class="input" type="number" id="obsPort" name="obsPort" placeholder="4455" value="4455" required />
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label" for="obsPassword">Password</label>
+                        <div class="control">
+                            <input class="input" type="password" id="obsPassword" name="obsPassword" placeholder="OBS WebSocket Password (optional)" />
+                        </div>
+                    </div>
+                    <div class="control">
+                        <button class="button is-primary" type="submit">Connect to OBS</button>
+                    </div>
+                </form>
+                <p id="obs-message" class="help"></p>
+            </div>
         </section>
     `;
-    updateStatus('Disconnected');
+    updateStatus('Disconnected', 'websocket-status');
+    updateStatus('Disconnected', 'obs-status');
     // Start connection to the WebSocket server
     connectToWebSocket();
+    // Handle the OBS connection form
+    document.getElementById('obs-connection-form').addEventListener('submit', handleOBSConnectionFormSubmit);
+}
+
+// Handle OBS connection form submission
+async function handleOBSConnectionFormSubmit(event) {
+    event.preventDefault();
+    const obsUrl = document.getElementById('obsUrl').value.trim();
+    const obsPort = document.getElementById('obsPort').value.trim();
+    const obsPassword = document.getElementById('obsPassword').value.trim();
+    const fullWebSocketURL = `${obsUrl}:${obsPort}`;
+    console.log(`Connecting to OBS WebSocket at ${fullWebSocketURL}`);
+    // Connect to OBS using the provided details
+    await connectToOBS(fullWebSocketURL, obsPassword);
+}
+
+// Connect to OBS
+async function connectToOBS(url, password = null) {
+    try {
+        const connectionDetails = password ? { address: url, password } : { address: url };
+        // Attempt to connect to OBS WebSocket
+        await obs.connect(connectionDetails);
+        console.log('Connected to OBS');
+        updateStatus('Connected', 'obs-status');
+        // Listen for OBS disconnection
+        obs.on('ConnectionClosed', () => {
+            console.log('OBS Disconnected');
+            updateStatus('Disconnected', 'obs-status');
+        });
+    } catch (error) {
+        console.error('Failed to connect to OBS:', error);
+        updateStatus('Connection Error', 'obs-status');
+        document.getElementById('obs-message').textContent = 'Failed to connect to OBS. Check your WebSocket settings.';
+    }
 }
 
 // Connect to your WebSocket server
@@ -142,7 +206,7 @@ async function connectToWebSocket() {
         console.log('Connected to WebSocket server.');
         // Emit the 'REGISTER' event with 'code' and 'name'
         socket.emit('REGISTER', { code: apiKey, name: `OBS Connector V${VERSION}` });
-        updateStatus('Connected');
+        updateStatus('Connected', 'websocket-status');
         registerEventHandlers();
     });
     socket.on('SUCCESS', (data) => {
@@ -155,12 +219,11 @@ async function connectToWebSocket() {
     });
     socket.on('disconnect', (reason) => {
         console.warn('Disconnected from WebSocket server:', reason);
-        updateStatus('Disconnected');
+        updateStatus('Disconnected', 'websocket-status');
     });
     socket.on('connect_error', (error) => {
         console.error('WebSocket connection error:', error);
-        logMessage('WebSocket connection error.');
-        updateStatus('Connection Error');
+        updateStatus('Connection Error', 'websocket-status');
     });
 }
 
@@ -174,8 +237,8 @@ function registerEventHandlers() {
 }
 
 // Update the connection status displayed in the UI
-function updateStatus(status) {
-    document.getElementById('websocket-status').textContent = status;
+function updateStatus(status, elementId) {
+    document.getElementById(elementId).textContent = status;
 }
 
 // Log messages to the UI
