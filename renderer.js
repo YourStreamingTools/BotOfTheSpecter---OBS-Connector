@@ -6,11 +6,30 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const ini = require('ini');
+const { ipcRenderer } = require('electron');
 const VERSION = '1.0';
 let socket;
 const obs = new OBSWebSocket();
 const settingsDir = path.join(os.homedir(), 'AppData', 'Local', 'YourStreamingTools', 'BotOfTheSpecterOBSConnector');
 const settingsPath = path.join(settingsDir, 'settings.ini');
+let logMessages = [];
+
+// Add a function to send logs to the logs window
+function sendLogsToLogsWindow() {
+    ipcRenderer.send('update-logs', logMessages);
+}
+
+// Update the logMessage function to store logs
+function logMessage(message) {
+    const logsDiv = document.getElementById('logs');
+    const p = document.createElement('p');
+    p.textContent = message;
+    logsDiv.appendChild(p);
+    // Store the log message
+    logMessages.push(message);
+    // Send logs to the logs window
+    sendLogsToLogsWindow();
+}
 
 // Load OBS settings from INI file
 function loadOBSSettings() {
