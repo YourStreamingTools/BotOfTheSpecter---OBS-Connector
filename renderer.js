@@ -162,7 +162,11 @@ async function handleOBSConnectionFormSubmit(event) {
     const fullWebSocketURL = `${obsUrl}:${obsPort}`;
     console.log(`Connecting to OBS WebSocket at ${fullWebSocketURL}`);
     // Connect to OBS using the provided details
-    await connectToOBS(fullWebSocketURL, obsPassword);
+    const isConnected = await connectToOBS(fullWebSocketURL, obsPassword);
+    if (isConnected) {
+        // Hide the OBS connection form after successful connection
+        document.getElementById('obs-connection-form').style.display = 'none';
+    }
 }
 
 // Connect to OBS
@@ -177,10 +181,12 @@ async function connectToOBS(url, password = null) {
             console.log('OBS Disconnected');
             updateStatus('Disconnected', 'obs-status');
         });
+        return true;
     } catch (error) {
         console.error('Failed to connect to OBS:', error);
         updateStatus('Connection Error', 'obs-status');
         document.getElementById('obs-message').textContent = 'Failed to connect to OBS. Check your WebSocket settings.';
+        return false;
     }
 }
 
