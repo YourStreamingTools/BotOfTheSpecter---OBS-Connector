@@ -2,17 +2,41 @@ const axios = require('axios');
 const keytar = require('keytar');
 const io = require('socket.io-client');
 const OBSWebSocket = require('obs-websocket-js').default;
-
+const fs = require('fs');
+const path = require('path');
+const settingsPath = path.join(__dirname, 'settings.json');
 const VERSION = '1.0';
 let socket;
 const obs = new OBSWebSocket();
 
 console.log("Renderer script is running!");
 
-// Set up event listener for when the DOM is fully loaded
+// Load OBS settings from file
+function loadOBSSettings() {
+    if (fs.existsSync(settingsPath)) {
+        const rawData = fs.readFileSync(settingsPath);
+        return JSON.parse(rawData);
+    }
+    return null;
+}
+
+// Automatically connect to OBS using saved settings on startup
+async function connectToOBSOnStartup() {
+    const settings = loadOBSSettings();
+    if (settings) {
+        const obsUrl = settings.obsUrl;
+        const obsPort = settings.obsPort;
+        const obsPassword = settings.obsPassword;
+        const fullWebSocketURL = `${obsUrl}:${obsPort}`;
+        console.log(`Connecting to OBS WebSocket at ${fullWebSocketURL}`);
+        await connectToOBS(fullWebSocketURL, obsPassword);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Renderer.js: DOM Content Loaded");
     initApp();  // Initialize the application
+    connectToOBSOnStartup();  // Automatically connect to OBS using saved settings
 });
 
 // Initialize the application
