@@ -1,10 +1,12 @@
 const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
 const url = require('url');
+let settingsWindow;
 
 // Disable hardware acceleration
 app.disableHardwareAcceleration();
 
+// Function to create the main window
 function createWindow() {
     const win = new BrowserWindow({
         width: 800,
@@ -14,7 +16,7 @@ function createWindow() {
             contextIsolation: false,
             enableRemoteModule: true,
         },
-        icon: path.join(__dirname, 'assets/icons/app-icon.png')
+        icon: path.join(__dirname, 'assets/icons/app-icon.png'),
     });
     win.loadURL(url.format({
         pathname: path.join(__dirname, 'index.html'),
@@ -27,6 +29,7 @@ function createWindow() {
         {
             label: 'File',
             submenu: [
+                { label: 'Settings', click: createSettingsWindow },
                 { label: 'Exit', click: () => { app.quit(); } },
             ]
         },
@@ -39,26 +42,41 @@ function createWindow() {
             ]
         },
         {
-            label: 'Window',
-            submenu: [
-                { role: 'minimize' },
-                { role: 'close' },
-            ]
-        },
-        {
             label: 'Help',
             submenu: [
-                {
-                    label: 'About',
-                    click: () => {
-                        console.log('About clicked');
-                    }
-                }
+                { label: 'About', click: () => { console.log('About clicked'); } }
             ]
         }
     ]);
     // Set the application menu
     Menu.setApplicationMenu(menu);
+}
+
+// Create a new settings window
+function createSettingsWindow() {
+    if (settingsWindow) {
+        settingsWindow.focus();
+        return;
+    }
+
+    settingsWindow = new BrowserWindow({
+        width: 400,
+        height: 300,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+        }
+    });
+
+    settingsWindow.loadURL(url.format({
+        pathname: path.join(__dirname, 'settings.html'),
+        protocol: 'file:',
+        slashes: true,
+    }));
+
+    settingsWindow.on('closed', () => {
+        settingsWindow = null;
+    });
 }
 
 app.whenReady().then(createWindow);
