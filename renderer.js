@@ -19,12 +19,8 @@ function sendLogsToLogsWindow() {
     ipcRenderer.send('update-logs', logMessages);
 }
 
-// Update the logMessage function to store logs
+// Updated logMessage function to store logs
 function logMessage(message) {
-    const logsDiv = document.getElementById('logs');
-    const p = document.createElement('p');
-    p.textContent = message;
-    logsDiv.appendChild(p);
     // Store the log message
     logMessages.push(message);
     // Send logs to the logs window
@@ -145,9 +141,6 @@ async function showMainView() {
                 <p>WebSocket Status: <span id="websocket-status">Disconnected</span></p>
                 <p>OBS Status: <span id="obs-status">Disconnected</span></p>
             </div>
-            <div id="logs" class="content">
-                <h2 class="subtitle">Logs</h2>
-            </div>
         </section>
     `;
     updateStatus('Disconnected', 'websocket-status');
@@ -172,16 +165,18 @@ async function connectToOBS(url, password = null) {
         await obs.connect(url, password ? password : undefined);
         console.log('Connected to OBS');
         updateStatus('Connected', 'obs-status');
+        logMessage('Connected to OBS');
         // Listen for OBS disconnection
         obs.on('ConnectionClosed', () => {
             console.log('OBS Disconnected');
             updateStatus('Disconnected', 'obs-status');
+            logMessage('OBS Disconnected');
         });
         return true;
     } catch (error) {
         console.error('Failed to connect to OBS:', error);
         updateStatus('Connection Error', 'obs-status');
-        document.getElementById('obs-message').textContent = 'Failed to connect to OBS. Check your WebSocket settings.';
+        logMessage('Failed to connect to OBS: ' + error);
         return false;
     }
 }
@@ -191,6 +186,7 @@ async function connectToWebSocket() {
     const apiKey = await getApiKey();
     if (!apiKey) {
         console.error('API Key not found.');
+        logMessage('API Key not found.');
         return;
     }
     socket = io('wss://websocket.botofthespecter.com', {
@@ -203,6 +199,7 @@ async function connectToWebSocket() {
     });
     socket.on('connect', () => {
         console.log('Connected to WebSocket server.');
+        logMessage('Connected to WebSocket server.');
         // Emit the 'REGISTER' event with 'code' and 'name'
         socket.emit('REGISTER', { code: apiKey, name: `OBS Connector V${VERSION}` });
         updateStatus('Connected', 'websocket-status');
@@ -214,14 +211,16 @@ async function connectToWebSocket() {
     });
     socket.on('ERROR', (error) => {
         console.error('WebSocket registration failed:', error);
-        logMessage('WebSocket registration failed.');
+        logMessage('WebSocket registration failed: ' + error);
     });
     socket.on('disconnect', (reason) => {
         console.warn('Disconnected from WebSocket server:', reason);
+        logMessage('Disconnected from WebSocket server: ' + reason);
         updateStatus('Disconnected', 'websocket-status');
     });
     socket.on('connect_error', (error) => {
         console.error('WebSocket connection error:', error);
+        logMessage('WebSocket connection error: ' + error);
         updateStatus('Connection Error', 'websocket-status');
     });
 }
@@ -238,12 +237,4 @@ function registerEventHandlers() {
 // Update the connection status displayed in the UI
 function updateStatus(status, elementId) {
     document.getElementById(elementId).textContent = status;
-}
-
-// Log messages to the UI
-function logMessage(message) {
-    const logsDiv = document.getElementById('logs');
-    const p = document.createElement('p');
-    p.textContent = message;
-    logsDiv.appendChild(p);
 }
