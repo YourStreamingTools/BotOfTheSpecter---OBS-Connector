@@ -1,7 +1,7 @@
 const axios = require('axios');
 const keytar = require('keytar');
 const io = require('socket.io-client');
-const OBSWebSocket = require('obs-websocket-js');
+const OBSWebSocket = require('obs-websocket-js').default;
 
 const VERSION = '1.0';
 let socket;
@@ -12,8 +12,6 @@ console.log("Renderer script is running!");
 // Set up event listener for when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Renderer.js: DOM Content Loaded");
-    const appDiv = document.getElementById('app');
-    appDiv.innerHTML = '<h2>Renderer.js is working!</h2>';
     initApp();  // Initialize the application
 });
 
@@ -170,9 +168,8 @@ async function handleOBSConnectionFormSubmit(event) {
 // Connect to OBS
 async function connectToOBS(url, password = null) {
     try {
-        const connectionDetails = password ? { address: url, password } : { address: url };
         // Attempt to connect to OBS WebSocket
-        await obs.connect(connectionDetails);
+        await obs.connect(url, password ? password : undefined);
         console.log('Connected to OBS');
         updateStatus('Connected', 'obs-status');
         // Listen for OBS disconnection
