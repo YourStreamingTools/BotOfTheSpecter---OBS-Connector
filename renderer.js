@@ -4,18 +4,19 @@ const io = require('socket.io-client');
 const OBSWebSocket = require('obs-websocket-js').default;
 const fs = require('fs');
 const path = require('path');
-const settingsPath = path.join(__dirname, 'settings.json');
+const os = require('os');
+const ini = require('ini');
 const VERSION = '1.0';
 let socket;
 const obs = new OBSWebSocket();
+const settingsDir = path.join(os.homedir(), 'AppData', 'Local', 'YourStreamingTools', 'BotOfTheSpecterOBSConnector');
+const settingsPath = path.join(settingsDir, 'settings.ini');
 
-console.log("Renderer script is running!");
-
-// Load OBS settings from file
+// Load OBS settings from INI file
 function loadOBSSettings() {
     if (fs.existsSync(settingsPath)) {
-        const rawData = fs.readFileSync(settingsPath);
-        return JSON.parse(rawData);
+        const rawData = fs.readFileSync(settingsPath, 'utf-8');
+        return ini.parse(rawData).OBS;
     }
     return null;
 }
