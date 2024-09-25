@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logs</title>
+    <title>BotOfTheSpecter - OBS Connector Logs</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css" />
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <section class="section">
-        <h1 class="title">Application Logs</h1>
-        <div id="logs" class="content">
-            <h2 class="subtitle">Logs</h2>
-            <div id="log-content"></div>
-        </div>
-    </section>
-    <script src="logs_renderer.js"></script>
+    <div id="logs"></div>
+    <script>
+        const { ipcRenderer } = require('electron');
+        // Listen for logs sent from the main process
+        ipcRenderer.on('display-logs', (event, logs) => {
+            const logsDiv = document.getElementById('logs');
+            logsDiv.innerHTML = logs.map(log => `<p>${log}</p>`).join('');
+        });
+    </script>
 </body>
 </html>
