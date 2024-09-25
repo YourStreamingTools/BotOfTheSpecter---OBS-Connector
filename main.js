@@ -105,7 +105,7 @@ function createLogsWindow() {
 ipcMain.on('update-logs', (event, logMessages) => {
     logs = logMessages;
     if (logsWindow) {
-        logsWindow.webContents.send('update-logs', logs);
+        logsWindow.webContents.send('display-logs', logs);
     }
 });
 
