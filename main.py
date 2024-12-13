@@ -4,7 +4,7 @@ import keyring
 import configparser
 import requests
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QDialog, QStackedWidget
+from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QStackedWidget
 from PyQt5.QtGui import QIcon, QColor
 
 # Paths for settings and API key storage
