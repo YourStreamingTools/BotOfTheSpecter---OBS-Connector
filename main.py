@@ -3,7 +3,7 @@ import os
 import configparser
 import requests
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QStackedWidget
+from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QStackedWidget, QHBoxLayout
 from PyQt5.QtGui import QIcon, QColor
 
 # Paths for settings storage
@@ -145,15 +145,17 @@ class MainWindow(QMainWindow):
         title_label = QLabel("BotOfTheSpecter OBS Connector", self)
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #FFFFFF;")
+        button_layout = QHBoxLayout()
         api_key_button = QPushButton("API Key", self)
         api_key_button.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
         api_key_button.clicked.connect(self.show_api_key_settings)
         obs_settings_button = QPushButton("OBS Settings", self)
         obs_settings_button.setStyleSheet("background-color: #FF5733; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
         obs_settings_button.clicked.connect(self.show_obs_settings)
+        button_layout.addWidget(api_key_button)
+        button_layout.addWidget(obs_settings_button)
         main_layout.addWidget(title_label)
-        main_layout.addWidget(api_key_button)
-        main_layout.addWidget(obs_settings_button)
+        main_layout.addLayout(button_layout)
         self.main_page.setLayout(main_layout)
         self.settings_page = SettingsPage()
         self.obs_settings_page = OBSSettingsPage()
