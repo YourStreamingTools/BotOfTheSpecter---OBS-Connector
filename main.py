@@ -2,7 +2,7 @@ import sys
 import os
 import configparser
 import requests
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QStackedWidget
 from PyQt5.QtGui import QIcon, QColor
 
@@ -42,6 +42,8 @@ def validate_api_key(api_key):
 
 # Settings Window
 class SettingsPage(QWidget):
+    api_key_saved = pyqtSignal()
+
     def __init__(self):
         super().__init__()
         title_label = QLabel("API Key Required", self)
@@ -67,7 +69,7 @@ class SettingsPage(QWidget):
             settings = load_settings()
             settings.set('API', 'apiKey', api_key)
             save_settings(settings)
-            self.parent().stack.setCurrentIndex(0)
+            self.api_key_saved.emit()
         else:
             error_label = QLabel("Invalid API Key. Please try again.", self)
             error_label.setStyleSheet("color: red; font-size: 12px;")
@@ -99,6 +101,7 @@ class MainWindow(QMainWindow):
         self.settings_page = SettingsPage()
         self.stack.addWidget(self.main_page)
         self.stack.addWidget(self.settings_page)
+        self.settings_page.api_key_saved.connect(self.on_api_key_saved)
         settings = load_settings()
         api_key = settings.get('API', 'apiKey', fallback=None)
         if api_key:
@@ -108,6 +111,9 @@ class MainWindow(QMainWindow):
 
     def show_settings(self):
         self.stack.setCurrentIndex(1)
+
+    def on_api_key_saved(self):
+        self.stack.setCurrentIndex(0)
 
 # Main Application
 def main():
