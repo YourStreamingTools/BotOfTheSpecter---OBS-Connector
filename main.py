@@ -118,9 +118,9 @@ def main():
     app.setPalette(palette)
     api_key = keyring.get_password("BotOfTheSpecter", "apiAuthKey")
     if not api_key:
-        settings_page = SettingsPage()
-        app.setActiveWindow(settings_page)
-        settings_page.show()
+        main_window = MainWindow()
+        main_window.settings_page.show()
+        main_window.show()
     else:
         main_window = MainWindow()
         main_window.show()
