@@ -52,6 +52,9 @@ class SettingsPage(QWidget):
         self.api_key_input = QLineEdit(self)
         self.api_key_input.setPlaceholderText("Enter API Key")
         self.api_key_input.setStyleSheet("background-color: #555555; color: #FFFFFF; padding: 5px; border-radius: 5px;")
+        settings = load_settings()
+        api_key = settings.get('API', 'apiKey', fallback='')
+        self.api_key_input.setText(api_key)
         save_button = QPushButton("Save API Key", self)
         save_button.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
         save_button.clicked.connect(self.save_api_key)
@@ -72,6 +75,7 @@ class SettingsPage(QWidget):
             settings = load_settings()
             settings.set('API', 'apiKey', api_key)
             save_settings(settings)
+            self.error_label.setText("")
             self.api_key_saved.emit()
         else:
             self.error_label.setText("Invalid API Key. Please try again.")
