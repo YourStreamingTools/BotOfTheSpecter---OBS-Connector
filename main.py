@@ -147,7 +147,7 @@ class MainWindow(QMainWindow):
         title_label.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #FFFFFF;")
         api_key_button = QPushButton("API Key", self)
         api_key_button.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
-        api_key_button.clicked.connect(self.show_api_key)
+        api_key_button.clicked.connect(self.show_api_key_settings)
         obs_settings_button = QPushButton("OBS Settings", self)
         obs_settings_button.setStyleSheet("background-color: #FF5733; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
         obs_settings_button.clicked.connect(self.show_obs_settings)
@@ -171,7 +171,7 @@ class MainWindow(QMainWindow):
         else:
             self.stack.setCurrentIndex(1)
 
-    def show_api_key(self):
+    def show_api_key_settings(self):
         self.stack.setCurrentIndex(1)
 
     def show_obs_settings(self):
