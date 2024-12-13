@@ -22,6 +22,10 @@ def load_settings():
     else:
         config.add_section('API')
         config.set('API', 'apiKey', '')
+        config.add_section('OBS')
+        config.set('OBS', 'server_ip', 'localhost')
+        config.set('OBS', 'server_port', '4455')
+        config.set('OBS', 'server_password', '')
     return config
 
 # Save settings to the INI file
@@ -71,16 +75,63 @@ class SettingsPage(QWidget):
 
     def save_api_key(self):
         api_key = self.api_key_input.text()
-        if validate_api_key(api_key):
-            settings = load_settings()
-            settings.set('API', 'apiKey', api_key)
-            save_settings(settings)
-            self.error_label.setText("")
-            self.api_key_saved.emit()
+        settings = load_settings()
+        if api_key != settings.get('API', 'apiKey'):
+            if validate_api_key(api_key):
+                settings.set('API', 'apiKey', api_key)
+                save_settings(settings)
+                self.error_label.setText("")
+                self.api_key_saved.emit()
+            else:
+                self.error_label.setText("Invalid API Key. Please try again.")
         else:
-            self.error_label.setText("Invalid API Key. Please try again.")
+            self.error_label.setText("API Key is already set.")
 
-# Main Window
+
+# OBS Settings Window
+class OBSSettingsPage(QWidget):
+    def __init__(self):
+        super().__init__()
+        title_label = QLabel("OBS WebSocket Settings", self)
+        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding-bottom: 20px; color: #FFFFFF;")
+        settings = load_settings()
+        self.server_ip_input = QLineEdit(self)
+        self.server_ip_input.setText(settings.get('OBS', 'server_ip', fallback='localhost'))
+        self.server_ip_input.setPlaceholderText("Enter OBS WebSocket IP")
+        self.server_ip_input.setStyleSheet("background-color: #555555; color: #FFFFFF; padding: 5px; border-radius: 5px;")
+        self.server_port_input = QLineEdit(self)
+        self.server_port_input.setText(settings.get('OBS', 'server_port', fallback='4455'))
+        self.server_port_input.setPlaceholderText("Enter OBS WebSocket Port")
+        self.server_port_input.setStyleSheet("background-color: #555555; color: #FFFFFF; padding: 5px; border-radius: 5px;")
+        self.server_password_input = QLineEdit(self)
+        self.server_password_input.setText(settings.get('OBS', 'server_password', fallback=''))
+        self.server_password_input.setPlaceholderText("Enter OBS WebSocket Password")
+        self.server_password_input.setStyleSheet("background-color: #555555; color: #FFFFFF; padding: 5px; border-radius: 5px;")
+        save_button = QPushButton("Save OBS Settings", self)
+        save_button.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
+        save_button.clicked.connect(self.save_obs_settings)
+        form_layout = QFormLayout()
+        form_layout.addRow("Server IP:", self.server_ip_input)
+        form_layout.addRow("Server Port:", self.server_port_input)
+        form_layout.addRow("Server Password:", self.server_password_input)
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(title_label)
+        main_layout.addLayout(form_layout)
+        main_layout.addWidget(save_button)
+        self.setLayout(main_layout)
+
+    def save_obs_settings(self):
+        server_ip = self.server_ip_input.text()
+        server_port = self.server_port_input.text()
+        server_password = self.server_password_input.text()
+        settings = load_settings()
+        settings.set('OBS', 'server_ip', server_ip)
+        settings.set('OBS', 'server_port', server_port)
+        settings.set('OBS', 'server_password', server_password)
+        save_settings(settings)
+        self.parent().stack.setCurrentIndex(0)
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -104,16 +155,17 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(logs_button)
         self.main_page.setLayout(main_layout)
         self.settings_page = SettingsPage()
+        self.obs_settings_page = OBSSettingsPage()
         self.stack.addWidget(self.main_page)
         self.stack.addWidget(self.settings_page)
+        self.stack.addWidget(self.obs_settings_page)
         self.settings_page.api_key_saved.connect(self.on_api_key_saved)
         self.check_and_redirect()
 
     def check_and_redirect(self):
         settings = load_settings()
         api_key = settings.get('API', 'apiKey', fallback=None)
-        obs_settings = settings.get('OBS', 'enabled', fallback=None)
-        if api_key and obs_settings == 'True':
+        if api_key and validate_api_key(api_key):
             self.stack.setCurrentIndex(0)
         else:
             self.stack.setCurrentIndex(1)
