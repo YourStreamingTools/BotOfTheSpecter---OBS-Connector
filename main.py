@@ -68,7 +68,6 @@ class SettingsPage(QWidget):
         back_button = QPushButton("Back", self)
         back_button.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
         back_button.clicked.connect(self.go_back)
-
         form_layout = QFormLayout()
         form_layout.addRow("API Key:", self.api_key_input)
         form_layout.addRow(self.error_label)
