@@ -79,7 +79,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Bot Of The Specter OBS Connector")
         self.setGeometry(100, 100, 800, 600)
-        self.setWindowIcon(QIcon('assets/icons/app-icon.png'))
+        self.setWindowIcon(QIcon('/assets/icons/app-icon.png'))
         self.stack = QStackedWidget(self)
         self.setCentralWidget(self.stack)
         self.main_page = QWidget()
@@ -118,13 +118,12 @@ def main():
     app.setPalette(palette)
     api_key = keyring.get_password("BotOfTheSpecter", "apiAuthKey")
     settings_exist = os.path.exists(settings_path)
+    main_window = MainWindow()
     if not api_key or not settings_exist:
-        main_window = MainWindow()
-        main_window.settings_page.show()
-        main_window.show()
+        main_window.stack.setCurrentIndex(1)
     else:
-        main_window = MainWindow()
-        main_window.show()
+        main_window.stack.setCurrentIndex(0)
+    main_window.show()
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
