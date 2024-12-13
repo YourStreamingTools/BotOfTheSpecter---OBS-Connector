@@ -107,9 +107,13 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.main_page)
         self.stack.addWidget(self.settings_page)
         self.settings_page.api_key_saved.connect(self.on_api_key_saved)
+        self.check_and_redirect()
+
+    def check_and_redirect(self):
         settings = load_settings()
         api_key = settings.get('API', 'apiKey', fallback=None)
-        if api_key:
+        obs_settings = settings.get('OBS', 'enabled', fallback=None)
+        if api_key and obs_settings == 'True':
             self.stack.setCurrentIndex(0)
         else:
             self.stack.setCurrentIndex(1)
@@ -118,7 +122,7 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentIndex(1)
 
     def on_api_key_saved(self):
-        self.stack.setCurrentIndex(0)
+        self.check_and_redirect()
 
 # Main Application
 def main():
