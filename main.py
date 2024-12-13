@@ -55,8 +55,11 @@ class SettingsPage(QWidget):
         save_button = QPushButton("Save API Key", self)
         save_button.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
         save_button.clicked.connect(self.save_api_key)
+        self.error_label = QLabel("", self)
+        self.error_label.setStyleSheet("color: red; font-size: 12px;")
         form_layout = QFormLayout()
         form_layout.addRow("API Key:", self.api_key_input)
+        form_layout.addRow(self.error_label)
         main_layout = QVBoxLayout()
         main_layout.addWidget(title_label)
         main_layout.addLayout(form_layout)
@@ -71,9 +74,7 @@ class SettingsPage(QWidget):
             save_settings(settings)
             self.api_key_saved.emit()
         else:
-            error_label = QLabel("Invalid API Key. Please try again.", self)
-            error_label.setStyleSheet("color: red; font-size: 12px;")
-            self.layout().addWidget(error_label)
+            self.error_label.setText("Invalid API Key. Please try again.")
 
 # Main Window
 class MainWindow(QMainWindow):
