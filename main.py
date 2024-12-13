@@ -4,8 +4,8 @@ import keyring
 import configparser
 import requests
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QStackedWidget
-from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QDialog, QStackedWidget
+from PyQt5.QtGui import QIcon, QColor
 
 # Paths for settings and API key storage
 settings_dir = os.path.join(os.path.expanduser("~"), 'AppData', 'Local', 'YourStreamingTools', 'BotOfTheSpecterOBSConnector')
@@ -108,6 +108,14 @@ class MainWindow(QMainWindow):
 def main():
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
+    palette = app.palette()
+    palette.setColor(palette.Window, QColor("#333333"))
+    palette.setColor(palette.WindowText, QColor("#FFFFFF"))
+    palette.setColor(palette.Base, QColor("#444444"))
+    palette.setColor(palette.AlternateBase, QColor("#555555"))
+    palette.setColor(palette.ToolTipBase, QColor("#FFFFFF"))
+    palette.setColor(palette.ToolTipText, QColor("#333333"))
+    app.setPalette(palette)
     api_key = keyring.get_password("BotOfTheSpecter", "apiAuthKey")
     if not api_key:
         settings_page = SettingsPage()
