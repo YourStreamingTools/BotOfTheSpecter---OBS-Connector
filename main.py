@@ -64,6 +64,10 @@ class SettingsPage(QWidget):
         save_button.clicked.connect(self.save_api_key)
         self.error_label = QLabel("", self)
         self.error_label.setStyleSheet("color: red; font-size: 12px;")
+        back_button = QPushButton("Back", self)
+        back_button.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
+        back_button.clicked.connect(self.go_back)
+
         form_layout = QFormLayout()
         form_layout.addRow("API Key:", self.api_key_input)
         form_layout.addRow(self.error_label)
@@ -71,6 +75,7 @@ class SettingsPage(QWidget):
         main_layout.addWidget(title_label)
         main_layout.addLayout(form_layout)
         main_layout.addWidget(save_button)
+        main_layout.addWidget(back_button)
         self.setLayout(main_layout)
 
     def save_api_key(self):
@@ -86,7 +91,9 @@ class SettingsPage(QWidget):
                 self.error_label.setText("Invalid API Key. Please try again.")
         else:
             self.error_label.setText("API Key is already set.")
-
+    
+    def go_back(self):
+        self.parent().stack.setCurrentIndex(0)
 
 # OBS Settings Window
 class OBSSettingsPage(QWidget):
@@ -111,6 +118,10 @@ class OBSSettingsPage(QWidget):
         save_button = QPushButton("Save OBS Settings", self)
         save_button.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
         save_button.clicked.connect(self.save_obs_settings)
+        back_button = QPushButton("Back", self)
+        back_button.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
+        back_button.clicked.connect(self.go_back)
+
         form_layout = QFormLayout()
         form_layout.addRow("Server IP:", self.server_ip_input)
         form_layout.addRow("Server Port:", self.server_port_input)
@@ -119,6 +130,7 @@ class OBSSettingsPage(QWidget):
         main_layout.addWidget(title_label)
         main_layout.addLayout(form_layout)
         main_layout.addWidget(save_button)
+        main_layout.addWidget(back_button)
         self.setLayout(main_layout)
 
     def save_obs_settings(self):
@@ -130,6 +142,9 @@ class OBSSettingsPage(QWidget):
         settings.set('OBS', 'server_port', server_port)
         settings.set('OBS', 'server_password', server_password)
         save_settings(settings)
+        self.parent().stack.setCurrentIndex(0)
+
+    def go_back(self):
         self.parent().stack.setCurrentIndex(0)
 
 class MainWindow(QMainWindow):
@@ -162,16 +177,7 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.main_page)
         self.stack.addWidget(self.settings_page)
         self.stack.addWidget(self.obs_settings_page)
-        self.settings_page.api_key_saved.connect(self.on_api_key_saved)
-        self.check_and_redirect()
-
-    def check_and_redirect(self):
-        settings = load_settings()
-        api_key = settings.get('API', 'apiKey', fallback=None)
-        if api_key and validate_api_key(api_key):
-            self.stack.setCurrentIndex(0)
-        else:
-            self.stack.setCurrentIndex(1)
+        self.settings_page.api_key_saved.connect(self.show_main_page)
 
     def show_api_key_settings(self):
         self.stack.setCurrentIndex(1)
@@ -179,8 +185,8 @@ class MainWindow(QMainWindow):
     def show_obs_settings(self):
         self.stack.setCurrentIndex(2)
 
-    def on_api_key_saved(self):
-        self.check_and_redirect()
+    def show_main_page(self):
+        self.stack.setCurrentIndex(0)
 
 # Main Application
 def main():
