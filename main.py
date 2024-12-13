@@ -135,24 +135,25 @@ class OBSSettingsPage(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Bot Of The Specter OBS Connector")
+        self.setWindowTitle("BotOfTheSpecter OBS Connector")
         self.setGeometry(100, 100, 800, 600)
         self.setWindowIcon(QIcon('/assets/icons/app-icon.png'))
         self.stack = QStackedWidget(self)
         self.setCentralWidget(self.stack)
         self.main_page = QWidget()
         main_layout = QVBoxLayout()
-        title_label = QLabel("Bot Of The Specter OBS Connector", self)
+        title_label = QLabel("BotOfTheSpecter OBS Connector", self)
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #FFFFFF;")
-        settings_button = QPushButton("Settings", self)
-        settings_button.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
-        settings_button.clicked.connect(self.show_settings)
-        logs_button = QPushButton("Logs", self)
-        logs_button.setStyleSheet("background-color: #FF5733; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
+        api_key_button = QPushButton("API Key", self)
+        api_key_button.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
+        api_key_button.clicked.connect(self.show_api_key)
+        obs_settings_button = QPushButton("OBS Settings", self)
+        obs_settings_button.setStyleSheet("background-color: #FF5733; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
+        obs_settings_button.clicked.connect(self.show_obs_settings)
         main_layout.addWidget(title_label)
-        main_layout.addWidget(settings_button)
-        main_layout.addWidget(logs_button)
+        main_layout.addWidget(api_key_button)
+        main_layout.addWidget(obs_settings_button)
         self.main_page.setLayout(main_layout)
         self.settings_page = SettingsPage()
         self.obs_settings_page = OBSSettingsPage()
@@ -170,8 +171,11 @@ class MainWindow(QMainWindow):
         else:
             self.stack.setCurrentIndex(1)
 
-    def show_settings(self):
+    def show_api_key(self):
         self.stack.setCurrentIndex(1)
+
+    def show_obs_settings(self):
+        self.stack.setCurrentIndex(2)
 
     def on_api_key_saved(self):
         self.check_and_redirect()
@@ -186,10 +190,10 @@ def main():
     palette.setColor(palette.Base, QColor("#444444"))
     palette.setColor(palette.AlternateBase, QColor("#555555"))
     palette.setColor(palette.ToolTipBase, QColor("#FFFFFF"))
-    palette.setColor(palette.ToolTipText, QColor("#333333"))
+    palette.setColor(palette.ToolTipText, QColor("#000000"))
     app.setPalette(palette)
-    main_window = MainWindow()
-    main_window.show()
+    window = MainWindow()
+    window.show()
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
