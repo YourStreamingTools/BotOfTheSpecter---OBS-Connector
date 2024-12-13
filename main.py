@@ -93,7 +93,7 @@ class SettingsPage(QWidget):
             self.error_label.setText("API Key is already set.")
     
     def go_back(self):
-        self.parent().stack.setCurrentIndex(0)
+        self.parent().show_main_page()
 
 # OBS Settings Window
 class OBSSettingsPage(QWidget):
@@ -142,10 +142,10 @@ class OBSSettingsPage(QWidget):
         settings.set('OBS', 'server_port', server_port)
         settings.set('OBS', 'server_password', server_password)
         save_settings(settings)
-        self.parent().stack.setCurrentIndex(0)
+        self.parent().show_main_page()
 
     def go_back(self):
-        self.parent().stack.setCurrentIndex(0)
+        self.parent().show_main_page()
 
 class MainWindow(QMainWindow):
     def __init__(self):
