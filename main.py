@@ -4,7 +4,7 @@ import keyring
 import configparser
 import requests
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QDialog
+from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QStackedWidget
 from PyQt5.QtGui import QIcon
 
 # Paths for settings and API key storage
@@ -43,12 +43,9 @@ def validate_api_key(api_key):
         return False
 
 # Settings Window
-class SettingsWindow(QDialog):
+class SettingsPage(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Settings")
-        self.setGeometry(100, 100, 400, 300)
-        self.setWindowIcon(QIcon('assets/icons/app-icon.png'))
         title_label = QLabel("API Key Required", self)
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding-bottom: 20px; color: #FFFFFF;")
@@ -70,9 +67,8 @@ class SettingsWindow(QDialog):
         api_key = self.api_key_input.text()
         if validate_api_key(api_key):
             keyring.set_password("BotOfTheSpecter", "apiAuthKey", api_key)
-            self.close()  # Close the window once the key is valid
+            self.parent().stack.setCurrentIndex(0)
         else:
-            # Show an error message if the API key is invalid
             error_label = QLabel("Invalid API Key. Please try again.", self)
             error_label.setStyleSheet("color: red; font-size: 12px;")
             self.layout().addWidget(error_label)
@@ -84,25 +80,29 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Bot Of The Specter OBS Connector")
         self.setGeometry(100, 100, 800, 600)
         self.setWindowIcon(QIcon('assets/icons/app-icon.png'))
+        self.stack = QStackedWidget(self)
+        self.setCentralWidget(self.stack)
+        self.main_page = QWidget()
+        main_layout = QVBoxLayout()
         title_label = QLabel("Bot Of The Specter OBS Connector", self)
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #FFFFFF;")
         settings_button = QPushButton("Settings", self)
         settings_button.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
-        settings_button.clicked.connect(self.open_settings)
+        settings_button.clicked.connect(self.show_settings)
         logs_button = QPushButton("Logs", self)
         logs_button.setStyleSheet("background-color: #FF5733; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
-        main_layout = QVBoxLayout()
         main_layout.addWidget(title_label)
         main_layout.addWidget(settings_button)
         main_layout.addWidget(logs_button)
-        container = QWidget()
-        container.setLayout(main_layout)
-        self.setCentralWidget(container)
+        self.main_page.setLayout(main_layout)
+        self.settings_page = SettingsPage()
+        self.stack.addWidget(self.main_page)
+        self.stack.addWidget(self.settings_page)
+        self.stack.setCurrentIndex(0)
 
-    def open_settings(self):
-        settings_window = SettingsWindow()
-        settings_window.exec_()
+    def show_settings(self):
+        self.stack.setCurrentIndex(1)
 
 # Main Application
 def main():
@@ -110,10 +110,12 @@ def main():
     app.setStyle('Fusion')
     api_key = keyring.get_password("BotOfTheSpecter", "apiAuthKey")
     if not api_key:
-        settings_window = SettingsWindow()
-        settings_window.exec_()
-    main_window = MainWindow()
-    main_window.show()
+        settings_page = SettingsPage()
+        app.setActiveWindow(settings_page)
+        settings_page.show()
+    else:
+        main_window = MainWindow()
+        main_window.show()
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
