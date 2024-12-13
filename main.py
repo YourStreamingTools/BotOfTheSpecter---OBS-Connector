@@ -87,6 +87,7 @@ class SettingsPage(QWidget):
                 save_settings(settings)
                 self.error_label.setText("")
                 self.api_key_saved.emit()
+                self.main_window.show_main_page()
             else:
                 self.error_label.setText("Invalid API Key. Please try again.")
         else:
@@ -183,6 +184,11 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.settings_page)
         self.obs_settings_page = OBSSettingsPage(self)
         self.stack.addWidget(self.obs_settings_page)
+        settings = load_settings()
+        if not settings.get('API', 'apiKey'):
+            self.show_api_key_page()
+        else:
+            self.show_main_page()
 
     def show_api_key_page(self):
         self.stack.setCurrentWidget(self.settings_page)
