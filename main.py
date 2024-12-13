@@ -117,7 +117,8 @@ def main():
     palette.setColor(palette.ToolTipText, QColor("#333333"))
     app.setPalette(palette)
     api_key = keyring.get_password("BotOfTheSpecter", "apiAuthKey")
-    if not api_key:
+    settings_exist = os.path.exists(settings_path)
+    if not api_key or not settings_exist:
         main_window = MainWindow()
         main_window.settings_page.show()
         main_window.show()
