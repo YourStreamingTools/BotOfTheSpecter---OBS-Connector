@@ -1,13 +1,12 @@
 import sys
 import os
-import keyring
 import configparser
 import requests
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QStackedWidget
 from PyQt5.QtGui import QIcon, QColor
 
-# Paths for settings and API key storage
+# Paths for settings storage
 settings_dir = os.path.join(os.path.expanduser("~"), 'AppData', 'Local', 'YourStreamingTools', 'BotOfTheSpecterOBSConnector')
 settings_path = os.path.join(settings_dir, 'settings.ini')
 
@@ -20,14 +19,13 @@ def load_settings():
     config = configparser.ConfigParser()
     if os.path.exists(settings_path):
         config.read(settings_path)
-        return config
     else:
-        return {'OBS': {'obsUrl': 'ws://localhost', 'obsPort': '4455', 'obsPassword': ''}}
+        config.add_section('API')
+        config.set('API', 'apiKey', '')
+    return config
 
 # Save settings to the INI file
-def save_settings(settings):
-    config = configparser.ConfigParser()
-    config.read_dict(settings)
+def save_settings(config):
     with open(settings_path, 'w') as configfile:
         config.write(configfile)
 
@@ -66,7 +64,9 @@ class SettingsPage(QWidget):
     def save_api_key(self):
         api_key = self.api_key_input.text()
         if validate_api_key(api_key):
-            keyring.set_password("BotOfTheSpecter", "apiAuthKey", api_key)
+            settings = load_settings()
+            settings.set('API', 'apiKey', api_key)
+            save_settings(settings)
             self.parent().stack.setCurrentIndex(0)
         else:
             error_label = QLabel("Invalid API Key. Please try again.", self)
@@ -99,7 +99,12 @@ class MainWindow(QMainWindow):
         self.settings_page = SettingsPage()
         self.stack.addWidget(self.main_page)
         self.stack.addWidget(self.settings_page)
-        self.stack.setCurrentIndex(0)
+        settings = load_settings()
+        api_key = settings.get('API', 'apiKey', fallback=None)
+        if api_key:
+            self.stack.setCurrentIndex(0)
+        else:
+            self.stack.setCurrentIndex(1)
 
     def show_settings(self):
         self.stack.setCurrentIndex(1)
@@ -116,13 +121,7 @@ def main():
     palette.setColor(palette.ToolTipBase, QColor("#FFFFFF"))
     palette.setColor(palette.ToolTipText, QColor("#333333"))
     app.setPalette(palette)
-    api_key = keyring.get_password("BotOfTheSpecter", "apiAuthKey")
-    settings_exist = os.path.exists(settings_path)
     main_window = MainWindow()
-    if not api_key or not settings_exist:
-        main_window.stack.setCurrentIndex(1)
-    else:
-        main_window.stack.setCurrentIndex(0)
     main_window.show()
     sys.exit(app.exec_())
 
