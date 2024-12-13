@@ -152,7 +152,12 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("BotOfTheSpecter OBS Connector")
         self.setGeometry(100, 100, 800, 600)
-        self.setWindowIcon(QIcon('/assets/icons/app-icon.png'))
+        if getattr(sys, 'frozen', False):
+            app_path = sys._MEIPASS
+            icon_path = os.path.join(app_path, 'assets', 'icons', 'app-icon.ico')
+        else:
+            icon_path = os.path.join(os.path.dirname(__file__), 'assets', 'icons', 'app-icon.ico')
+        self.setWindowIcon(QIcon(icon_path))
         self.stack = QStackedWidget(self)
         self.setCentralWidget(self.stack)
         self.main_page = QWidget()
@@ -163,33 +168,32 @@ class MainWindow(QMainWindow):
         button_layout = QHBoxLayout()
         api_key_button = QPushButton("API Key", self)
         api_key_button.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
-        api_key_button.clicked.connect(self.show_api_key_settings)
+        api_key_button.clicked.connect(self.show_api_key_page)
         obs_settings_button = QPushButton("OBS Settings", self)
-        obs_settings_button.setStyleSheet("background-color: #FF5733; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
-        obs_settings_button.clicked.connect(self.show_obs_settings)
+        obs_settings_button.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
+        obs_settings_button.clicked.connect(self.show_obs_settings_page)
         button_layout.addWidget(api_key_button)
         button_layout.addWidget(obs_settings_button)
         main_layout.addWidget(title_label)
         main_layout.addLayout(button_layout)
         self.main_page.setLayout(main_layout)
-        self.settings_page = SettingsPage()
-        self.obs_settings_page = OBSSettingsPage()
         self.stack.addWidget(self.main_page)
-        self.stack.addWidget(self.settings_page)
-        self.stack.addWidget(self.obs_settings_page)
+        self.settings_page = SettingsPage()
         self.settings_page.api_key_saved.connect(self.show_main_page)
+        self.stack.addWidget(self.settings_page)
+        self.obs_settings_page = OBSSettingsPage()
+        self.stack.addWidget(self.obs_settings_page)
 
-    def show_api_key_settings(self):
-        self.stack.setCurrentIndex(1)
+    def show_api_key_page(self):
+        self.stack.setCurrentWidget(self.settings_page)
 
-    def show_obs_settings(self):
-        self.stack.setCurrentIndex(2)
+    def show_obs_settings_page(self):
+        self.stack.setCurrentWidget(self.obs_settings_page)
 
     def show_main_page(self):
-        self.stack.setCurrentIndex(0)
+        self.stack.setCurrentWidget(self.main_page)
 
-# Main Application
-def main():
+if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
     palette = app.palette()
@@ -203,6 +207,3 @@ def main():
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
-
-if __name__ == "__main__":
-    main()
