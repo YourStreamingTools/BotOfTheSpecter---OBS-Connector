@@ -48,8 +48,9 @@ def validate_api_key(api_key):
 class SettingsPage(QWidget):
     api_key_saved = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, main_window):
         super().__init__()
+        self.main_window = main_window
         title_label = QLabel("API Key Required", self)
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding-bottom: 20px; color: #FFFFFF;")
@@ -93,12 +94,13 @@ class SettingsPage(QWidget):
             self.error_label.setText("API Key is already set.")
     
     def go_back(self):
-        self.parent().show_main_page()
+        self.main_window.show_main_page()
 
 # OBS Settings Window
 class OBSSettingsPage(QWidget):
-    def __init__(self):
+    def __init__(self, main_window):
         super().__init__()
+        self.main_window = main_window
         title_label = QLabel("OBS WebSocket Settings", self)
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding-bottom: 20px; color: #FFFFFF;")
@@ -121,7 +123,6 @@ class OBSSettingsPage(QWidget):
         back_button = QPushButton("Back", self)
         back_button.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
         back_button.clicked.connect(self.go_back)
-
         form_layout = QFormLayout()
         form_layout.addRow("Server IP:", self.server_ip_input)
         form_layout.addRow("Server Port:", self.server_port_input)
@@ -142,10 +143,10 @@ class OBSSettingsPage(QWidget):
         settings.set('OBS', 'server_port', server_port)
         settings.set('OBS', 'server_password', server_password)
         save_settings(settings)
-        self.parent().show_main_page()
+        self.main_window.show_main_page()
 
     def go_back(self):
-        self.parent().show_main_page()
+        self.main_window.show_main_page()
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -178,10 +179,10 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(button_layout)
         self.main_page.setLayout(main_layout)
         self.stack.addWidget(self.main_page)
-        self.settings_page = SettingsPage()
+        self.settings_page = SettingsPage(self)
         self.settings_page.api_key_saved.connect(self.show_main_page)
         self.stack.addWidget(self.settings_page)
-        self.obs_settings_page = OBSSettingsPage()
+        self.obs_settings_page = OBSSettingsPage(self)
         self.stack.addWidget(self.obs_settings_page)
 
     def show_api_key_page(self):
