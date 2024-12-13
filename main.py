@@ -2,9 +2,10 @@ import sys
 import os
 import keyring
 import configparser
+import requests
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QLabel, QDialog, QGroupBox, QSpacerItem, QSizePolicy
-from PyQt5.QtGui import QIcon, QColor
+from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QDialog
+from PyQt5.QtGui import QIcon
 
 # Paths for settings and API key storage
 settings_dir = os.path.join(os.path.expanduser("~"), 'AppData', 'Local', 'YourStreamingTools', 'BotOfTheSpecterOBSConnector')
@@ -30,6 +31,17 @@ def save_settings(settings):
     with open(settings_path, 'w') as configfile:
         config.write(configfile)
 
+# API key validation function
+def validate_api_key(api_key):
+    try:
+        response = requests.get('https://api.botofthespecter.com/checkkey', params={'api_key': api_key}, timeout=5)
+        if response.status_code == 200:
+            return response.json().get('status') == 'Valid API Key'
+        return False
+    except requests.exceptions.RequestException as e:
+        print(f"Error validating API Key: {e}")
+        return False
+
 # Settings Window
 class SettingsWindow(QDialog):
     def __init__(self):
@@ -37,56 +49,33 @@ class SettingsWindow(QDialog):
         self.setWindowTitle("Settings")
         self.setGeometry(100, 100, 400, 300)
         self.setWindowIcon(QIcon('assets/icons/app-icon.png'))
-        title_label = QLabel("OBS Settings", self)
+        title_label = QLabel("API Key Required", self)
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding-bottom: 20px; color: #FFFFFF;")
         self.api_key_input = QLineEdit(self)
         self.api_key_input.setPlaceholderText("Enter API Key")
         self.api_key_input.setStyleSheet("background-color: #555555; color: #FFFFFF; padding: 5px; border-radius: 5px;")
-        self.obs_url_input = QLineEdit(self)
-        self.obs_url_input.setPlaceholderText("Enter OBS URL")
-        self.obs_url_input.setStyleSheet("background-color: #555555; color: #FFFFFF; padding: 5px; border-radius: 5px;")
-        self.obs_port_input = QLineEdit(self)
-        self.obs_port_input.setPlaceholderText("Enter OBS Port")
-        self.obs_port_input.setStyleSheet("background-color: #555555; color: #FFFFFF; padding: 5px; border-radius: 5px;")
-        self.obs_password_input = QLineEdit(self)
-        self.obs_password_input.setPlaceholderText("Enter OBS Password")
-        self.obs_password_input.setEchoMode(QLineEdit.Password)
-        self.obs_password_input.setStyleSheet("background-color: #555555; color: #FFFFFF; padding: 5px; border-radius: 5px;")
-        save_button = QPushButton("Save", self)
+        save_button = QPushButton("Save API Key", self)
         save_button.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
-        save_button.clicked.connect(self.save_settings)
+        save_button.clicked.connect(self.save_api_key)
         form_layout = QFormLayout()
         form_layout.addRow("API Key:", self.api_key_input)
-        form_layout.addRow("OBS URL:", self.obs_url_input)
-        form_layout.addRow("OBS Port:", self.obs_port_input)
-        form_layout.addRow("OBS Password:", self.obs_password_input)
         main_layout = QVBoxLayout()
         main_layout.addWidget(title_label)
         main_layout.addLayout(form_layout)
         main_layout.addWidget(save_button)
         self.setLayout(main_layout)
 
-    def load_settings(self):
-        settings = load_settings()
-        api_key = keyring.get_password("BotOfTheSpecter", "apiAuthKey") or ""
-        self.api_key_input.setText(api_key)
-        self.obs_url_input.setText(settings['OBS']['obsUrl'])
-        self.obs_port_input.setText(settings['OBS']['obsPort'])
-        self.obs_password_input.setText(settings['OBS']['obsPassword'])
-
-    def save_settings(self):
+    def save_api_key(self):
         api_key = self.api_key_input.text()
-        settings = {
-            'OBS': {
-                'obsUrl': self.obs_url_input.text(),
-                'obsPort': self.obs_port_input.text(),
-                'obsPassword': self.obs_password_input.text()
-            }
-        }
-        save_settings(settings)
-        keyring.set_password("BotOfTheSpecter", "apiAuthKey", api_key)
-        self.close()
+        if validate_api_key(api_key):
+            keyring.set_password("BotOfTheSpecter", "apiAuthKey", api_key)
+            self.close()  # Close the window once the key is valid
+        else:
+            # Show an error message if the API key is invalid
+            error_label = QLabel("Invalid API Key. Please try again.", self)
+            error_label.setStyleSheet("color: red; font-size: 12px;")
+            self.layout().addWidget(error_label)
 
 # Main Window
 class MainWindow(QMainWindow):
@@ -113,21 +102,16 @@ class MainWindow(QMainWindow):
 
     def open_settings(self):
         settings_window = SettingsWindow()
-        settings_window.load_settings()
         settings_window.exec_()
 
 # Main Application
 def main():
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
-    palette = app.palette()
-    palette.setColor(palette.Window, QColor("#333333"))
-    palette.setColor(palette.WindowText, QColor("#FFFFFF"))
-    palette.setColor(palette.Base, QColor("#444444"))
-    palette.setColor(palette.AlternateBase, QColor("#555555"))
-    palette.setColor(palette.ToolTipBase, QColor("#FFFFFF"))
-    palette.setColor(palette.ToolTipText, QColor("#333333"))
-    app.setPalette(palette)
+    api_key = keyring.get_password("BotOfTheSpecter", "apiAuthKey")
+    if not api_key:
+        settings_window = SettingsWindow()
+        settings_window.exec_()
     main_window = MainWindow()
     main_window.show()
     sys.exit(app.exec_())
