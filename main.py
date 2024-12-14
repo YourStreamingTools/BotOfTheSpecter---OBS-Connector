@@ -9,6 +9,7 @@ from PyQt5.QtGui import QIcon, QColor
 import socketio
 from socketio import AsyncClient as SocketClient
 import obswebsocket
+from obswebsocket import obsws
 
 # Paths for settings storage
 settings_dir = os.path.join(os.path.expanduser("~"), 'AppData', 'Local', 'YourStreamingTools', 'BotOfTheSpecterOBSConnector')
@@ -49,7 +50,6 @@ def validate_api_key(api_key):
             return response.json().get('status') == 'Valid API Key'
         return False
     except requests.exceptions.RequestException as e:
-        print(f"Error validating API Key: {e}")
         return False
 
 # WebSocket connection event handler
@@ -76,14 +76,15 @@ async def obs_websocket(async_thread):
     server_password = settings.get('OBS', 'server_password', fallback='')
     while True:
         try:
-            ws = obswebsocket.obsws(server_ip, server_port, server_password)
-            ws.connect()
+            obsSocket = obsws(server_ip, server_port, server_password)
+            obsSocket.connect()
             async_thread.obs_connection_status.emit(True)
             return True
-        except obswebsocket.exceptions.ConnectionFailure as e:
+        except obswebsocket.exceptions.ConnectionFailure as ConnectionFailure:
+            print(f"OBS WebSocket Exception Error ConnectionFailure: {ConnectionFailure}")
             async_thread.obs_connection_status.emit(False)
             await asyncio.sleep(10)
-        except Exception as e:
+        except Exception:
             async_thread.obs_connection_status.emit(False)
             await asyncio.sleep(10)
 
