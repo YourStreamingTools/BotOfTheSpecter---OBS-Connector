@@ -51,26 +51,43 @@ def validate_api_key(api_key):
         print(f"Error validating API Key: {e}")
         return False
 
-# Specter Websocket Server
-async def specter_websocket():
+# WebSocket connection event handler
+async def specter_websocket(async_thread):
     specter_websocket_uri = "wss://websocket.botofthespecter.com"
     while True:
         try:
             await specterSocket.connect(specter_websocket_uri)
+            async_thread.connection_status.emit(True)
             await specterSocket.wait()
             return True
         except socketio.exceptions.ConnectionError as e:
+            async_thread.connection_status.emit(False)
             await asyncio.sleep(10)
         except Exception as e:
+            async_thread.connection_status.emit(False)
             await asyncio.sleep(10)
 
+
+# Handle successful registration or connection
 @specterSocket.event
-async def connect():
-    settings = load_settings()
-    api_key = settings.get('API', 'apiKey', fallback='')
-    if api_key != "":
-        registration_data = { 'code': api_key, 'name': f'OBS Connector V{VERSION}' }
-        await specterSocket.emit('REGISTER', registration_data)
+async def event_success(data):
+    print("Received SUCCESS event from server.")
+    if hasattr(AsyncThread, 'connection_status'):
+        AsyncThread.connection_status.emit(True)
+
+# Handle server errors or failure to connect
+@specterSocket.event
+async def event_failure(data):
+    print("Received FAILURE event from server.")
+    if hasattr(AsyncThread, 'connection_status'):
+        AsyncThread.connection_status.emit(False)
+
+# Handle disconnection
+@specterSocket.event
+async def disconnect():
+    print("Disconnected from WebSocket server.")
+    if hasattr(AsyncThread, 'connection_status'):
+        AsyncThread.connection_status.emit(False)
 
 # Settings Window
 class SettingsPage(QWidget):
@@ -180,8 +197,7 @@ class OBSSettingsPage(QWidget):
 class AsyncThread(QThread):
     connection_status = pyqtSignal(bool)
     def run(self):
-        connected = asyncio.run(specter_websocket())
-        self.connection_status.emit(connected)
+        asyncio.run(specter_websocket(self))
 
 # MainWindow
 class MainWindow(QMainWindow):
