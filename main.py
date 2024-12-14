@@ -67,7 +67,6 @@ async def specter_websocket(async_thread):
             async_thread.connection_status.emit(False)
             await asyncio.sleep(10)
 
-
 # Handle successful registration or connection
 @specterSocket.event
 async def event_success(data):
@@ -204,13 +203,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("BotOfTheSpecter OBS Connector")
-        self.setGeometry(100, 100, 800, 600)
-        if getattr(sys, 'frozen', False):
-            app_path = sys._MEIPASS
-            icon_path = os.path.join(app_path, 'assets', 'icons', 'app-icon.ico')
-        else:
-            icon_path = os.path.join(os.path.dirname(__file__), 'assets', 'icons', 'app-icon.ico')
-        self.setWindowIcon(QIcon(icon_path))
+        self.setGeometry(100, 100, 500, 400)
+        self.setWindowIcon(QIcon(os.path.join('assets', 'icons', 'app-icon.ico')))
         self.stack = QStackedWidget(self)
         self.setCentralWidget(self.stack)
         # Main page layout
