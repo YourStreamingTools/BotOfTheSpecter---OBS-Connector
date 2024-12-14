@@ -2,13 +2,20 @@ import sys
 import os
 import configparser
 import requests
-from PyQt5.QtCore import Qt, pyqtSignal
+import asyncio
+from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QStackedWidget, QHBoxLayout
 from PyQt5.QtGui import QIcon, QColor
+import socketio
+from socketio import AsyncClient as SocketClient
 
 # Paths for settings storage
 settings_dir = os.path.join(os.path.expanduser("~"), 'AppData', 'Local', 'YourStreamingTools', 'BotOfTheSpecterOBSConnector')
 settings_path = os.path.join(settings_dir, 'settings.ini')
+
+# Globals
+specterSocket = SocketClient()
+VERSION = "1.0"
 
 # Ensure the settings directory exists
 if not os.path.exists(settings_dir):
@@ -43,6 +50,26 @@ def validate_api_key(api_key):
     except requests.exceptions.RequestException as e:
         print(f"Error validating API Key: {e}")
         return False
+
+# Specter Websocket Server
+async def specter_websocket():
+    specter_websocket_uri = "wss://websocket.botofthespecter.com"
+    while True:
+        try:
+            await specterSocket.connect(specter_websocket_uri)
+            await specterSocket.wait()
+        except socketio.exceptions.ConnectionError as e:
+            await asyncio.sleep(10)
+        except Exception as e:
+            await asyncio.sleep(10)
+
+@specterSocket.event
+async def connect():
+    settings = load_settings()
+    api_key = settings.get('API', 'apiKey', fallback='')
+    if api_key != "":
+        registration_data = { 'code': api_key, 'name': f'OBS Connector V{VERSION}' }
+        await specterSocket.emit('REGISTER', registration_data)
 
 # Settings Window
 class SettingsPage(QWidget):
@@ -148,6 +175,12 @@ class OBSSettingsPage(QWidget):
     def go_back(self):
         self.main_window.show_main_page()
 
+# Thread for running asyncio code in the background
+class AsyncThread(QThread):
+    def run(self):
+        asyncio.run(specter_websocket())
+
+# MainWindow
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -164,7 +197,7 @@ class MainWindow(QMainWindow):
         self.main_page = QWidget()
         main_layout = QVBoxLayout()
         title_label = QLabel("BotOfTheSpecter OBS Connector", self)
-        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setAlignment(Qt.AlignHCenter)
         title_label.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #FFFFFF;")
         button_layout = QHBoxLayout()
         api_key_button = QPushButton("API Key", self)
@@ -189,6 +222,8 @@ class MainWindow(QMainWindow):
             self.show_api_key_page()
         else:
             self.show_main_page()
+            self.async_thread = AsyncThread()
+            self.async_thread.start()
 
     def show_api_key_page(self):
         self.stack.setCurrentWidget(self.settings_page)
