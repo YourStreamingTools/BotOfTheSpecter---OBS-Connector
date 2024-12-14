@@ -58,6 +58,7 @@ async def specter_websocket():
         try:
             await specterSocket.connect(specter_websocket_uri)
             await specterSocket.wait()
+            return True
         except socketio.exceptions.ConnectionError as e:
             await asyncio.sleep(10)
         except Exception as e:
@@ -177,8 +178,10 @@ class OBSSettingsPage(QWidget):
 
 # Thread for running asyncio code in the background
 class AsyncThread(QThread):
+    connection_status = pyqtSignal(bool)
     def run(self):
-        asyncio.run(specter_websocket())
+        connected = asyncio.run(specter_websocket())
+        self.connection_status.emit(connected)
 
 # MainWindow
 class MainWindow(QMainWindow):
@@ -194,11 +197,18 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(QIcon(icon_path))
         self.stack = QStackedWidget(self)
         self.setCentralWidget(self.stack)
+        # Main page layout
         self.main_page = QWidget()
         main_layout = QVBoxLayout()
+        # Title label
         title_label = QLabel("BotOfTheSpecter OBS Connector", self)
         title_label.setAlignment(Qt.AlignHCenter)
         title_label.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #FFFFFF;")
+        # Connection status label
+        self.connection_status_label = QLabel("Specter WebSocket Connection: Not Connected", self)
+        self.connection_status_label.setAlignment(Qt.AlignCenter)
+        self.connection_status_label.setStyleSheet("font-size: 16px; color: #FF0000; margin-top: 20px;")
+        # Buttons layout
         button_layout = QHBoxLayout()
         api_key_button = QPushButton("API Key", self)
         api_key_button.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
@@ -208,22 +218,28 @@ class MainWindow(QMainWindow):
         obs_settings_button.clicked.connect(self.show_obs_settings_page)
         button_layout.addWidget(api_key_button)
         button_layout.addWidget(obs_settings_button)
+        # Add elements to the layout
         main_layout.addWidget(title_label)
+        main_layout.addWidget(self.connection_status_label)
         main_layout.addLayout(button_layout)
         self.main_page.setLayout(main_layout)
         self.stack.addWidget(self.main_page)
+        # Settings pages
         self.settings_page = SettingsPage(self)
         self.settings_page.api_key_saved.connect(self.show_main_page)
         self.stack.addWidget(self.settings_page)
         self.obs_settings_page = OBSSettingsPage(self)
         self.stack.addWidget(self.obs_settings_page)
+        # Start the AsyncThread and listen for connection status
+        self.async_thread = AsyncThread()
+        self.async_thread.connection_status.connect(self.update_connection_status)
+        self.async_thread.start()
+        # Load settings and display the appropriate page
         settings = load_settings()
         if not settings.get('API', 'apiKey'):
             self.show_api_key_page()
         else:
             self.show_main_page()
-            self.async_thread = AsyncThread()
-            self.async_thread.start()
 
     def show_api_key_page(self):
         self.stack.setCurrentWidget(self.settings_page)
@@ -233,6 +249,14 @@ class MainWindow(QMainWindow):
 
     def show_main_page(self):
         self.stack.setCurrentWidget(self.main_page)
+
+    def update_connection_status(self, connected):
+        if connected:
+            self.connection_status_label.setText("Specter WebSocket Connection: Connected")
+            self.connection_status_label.setStyleSheet("font-size: 16px; color: #00FF00; margin-top: 20px;")
+        else:
+            self.connection_status_label.setText("Specter WebSocket Connection: Not Connected")
+            self.connection_status_label.setStyleSheet("font-size: 16px; color: #FF0000; margin-top: 20px;")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
