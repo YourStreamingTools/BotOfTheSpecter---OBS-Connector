@@ -81,11 +81,9 @@ async def obs_websocket(async_thread):
             async_thread.obs_connection_status.emit(True)
             return True
         except obswebsocket.exceptions.ConnectionFailure as e:
-            print(f"Error connecting to OBS: {e}")
             async_thread.obs_connection_status.emit(False)
             await asyncio.sleep(10)
         except Exception as e:
-            print(f"OBS error: {e}")
             async_thread.obs_connection_status.emit(False)
             await asyncio.sleep(10)
 
