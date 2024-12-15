@@ -43,6 +43,14 @@ def save_settings(config):
     with open(settings_path, 'w') as configfile:
         config.write(configfile)
 
+# Get the settings for the OBS WebSocket Server
+async def obs_websocket_settings():
+    settings = load_settings()
+    server_ip = settings.get('OBS', 'server_ip', fallback='localhost')
+    server_port = settings.get('OBS', 'server_port', fallback='4455')
+    server_password = settings.get('OBS', 'server_password', fallback='')
+    return server_ip, server_port, server_password
+
 # API key validation function
 def validate_api_key(api_key):
     try:
@@ -70,13 +78,10 @@ async def specter_websocket(specter_thread):
 
 # Function to connect to OBS WebSocket server
 async def obs_websocket(obs_thread):
-    settings = load_settings()
-    server_ip = settings.get('OBS', 'server_ip', fallback='localhost')
-    server_port = settings.get('OBS', 'server_port', fallback='4455')
-    server_password = settings.get('OBS', 'server_password', fallback='')
     cancellation_event = asyncio.Event()
     while True:
         try:
+            server_ip, server_port, server_password = await obs_websocket_settings()
             obsSocket = obsws(server_ip, server_port, server_password)
             obsSocket.connect()
             obsSocket.call(obsrequests.GetSceneList())  
