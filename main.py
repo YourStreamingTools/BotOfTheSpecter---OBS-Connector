@@ -249,7 +249,8 @@ class MainWindow(QMainWindow):
         self.obs_connection_status_label.setStyleSheet("font-size: 16px; color: #FF0000;")
         # Group the connection status labels
         status_layout = QVBoxLayout()
-        status_layout.setSpacing(1)
+        status_layout.setSpacing(0)
+        status_layout.setAlignment(Qt.AlignCenter)
         status_layout.addWidget(self.connection_status_label)
         status_layout.addWidget(self.obs_connection_status_label)
         # Buttons layout
