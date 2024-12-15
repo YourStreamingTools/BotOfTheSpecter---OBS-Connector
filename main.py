@@ -1,7 +1,7 @@
 import sys
 import os
 import configparser
-import requests
+import aiohttp
 import asyncio
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QStackedWidget, QHBoxLayout
@@ -29,13 +29,49 @@ def load_settings():
     config = configparser.ConfigParser()
     if os.path.exists(settings_path):
         config.read(settings_path)
+        if 'VERSION' in config:
+            stored_version = config['VERSION'].get('version', None)
+            if stored_version != VERSION:
+                api_settings = dict(config.items('API')) if 'API' in config else {}
+                obs_settings = dict(config.items('OBS')) if 'OBS' in config else {}
+                os.remove(settings_path)
+                config = configparser.ConfigParser()
+                config.add_section('VERSION')
+                config.set('VERSION', 'version', VERSION)
+                config.add_section('API')
+                for key, value in api_settings.items():
+                    config.set('API', key, value)
+                config.add_section('OBS')
+                for key, value in obs_settings.items():
+                    config.set('OBS', key, value)
+                with open(settings_path, 'w') as f:
+                    config.write(f)
+        else:
+            api_settings = dict(config.items('API')) if 'API' in config else {}
+            obs_settings = dict(config.items('OBS')) if 'OBS' in config else {}
+            os.remove(settings_path)
+            config = configparser.ConfigParser()
+            config.add_section('VERSION')
+            config.set('VERSION', 'version', VERSION)
+            config.add_section('API')
+            for key, value in api_settings.items():
+                config.set('API', key, value)
+            config.add_section('OBS')
+            for key, value in obs_settings.items():
+                config.set('OBS', key, value)
+            with open(settings_path, 'w') as f:
+                config.write(f)
     else:
+        config.add_section('VERSION')
+        config.set('VERSION', 'version', VERSION)
         config.add_section('API')
         config.set('API', 'apiKey', '')
         config.add_section('OBS')
         config.set('OBS', 'server_ip', 'localhost')
         config.set('OBS', 'server_port', '4455')
         config.set('OBS', 'server_password', '')
+        with open(settings_path, 'w') as f:
+            config.write(f)
     return config
 
 # Save settings to the INI file
@@ -52,13 +88,15 @@ async def obs_websocket_settings():
     return server_ip, server_port, server_password
 
 # API key validation function
-def validate_api_key(api_key):
+async def validate_api_key(api_key):
     try:
-        response = requests.get('https://api.botofthespecter.com/checkkey', params={'api_key': api_key}, timeout=5)
-        if response.status_code == 200:
-            return response.json().get('status') == 'Valid API Key'
+        async with aiohttp.ClientSession() as session:
+            async with session.get('https://api.botofthespecter.com/checkkey', params={'api_key': api_key}) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return data.get('status') == 'Valid API Key'
         return False
-    except requests.exceptions.RequestException as e:
+    except aiohttp.exceptions.RequestException as e:
         return False
 
 # WebSocket connection event handler
@@ -90,11 +128,9 @@ async def obs_websocket(obs_thread):
             if cancellation_event.is_set():
                 break
         except obswebsocket.exceptions.ConnectionFailure as ConnectionFailure:
-            print(f"OBS WebSocket Exception Error ConnectionFailure: {ConnectionFailure}")
             obs_thread.obs_connection_status.emit(False)
             await asyncio.sleep(10)
         except Exception as e:
-            print(f"OBS WebSocket Exception: {e}")
             obs_thread.obs_connection_status.emit(False)
             await asyncio.sleep(10)
     if obsSocket.connected:
@@ -103,21 +139,18 @@ async def obs_websocket(obs_thread):
 # Handle successful registration or connection
 @specterSocket.event
 async def event_success(data):
-    print("Received SUCCESS event from server.")
     if hasattr(SpecterWebSocketThread, 'connection_status'):
         SpecterWebSocketThread.connection_status.emit(True)
 
 # Handle server errors or failure to connect
 @specterSocket.event
 async def event_failure(data):
-    print("Received FAILURE event from server.")
     if hasattr(SpecterWebSocketThread, 'connection_status'):
         SpecterWebSocketThread.connection_status.emit(False)
 
 # Handle disconnection
 @specterSocket.event
 async def disconnect():
-    print("Disconnected from WebSocket server.")
     if hasattr(SpecterWebSocketThread, 'connection_status'):
         SpecterWebSocketThread.connection_status.emit(False)
 
@@ -128,14 +161,14 @@ class SettingsPage(QWidget):
     def __init__(self, main_window):
         super().__init__()
         self.main_window = main_window
-        title_label = QLabel("API Key Required", self)
-        title_label.setAlignment(Qt.AlignCenter)
+        title_label = QLabel("Specter System API Key", self)
+        title_label.setAlignment(Qt.AlignHCenter)
         title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding-bottom: 20px; color: #FFFFFF;")
         self.api_key_input = QLineEdit(self)
         self.api_key_input.setPlaceholderText("Enter API Key")
         self.api_key_input.setStyleSheet("background-color: #555555; color: #FFFFFF; padding: 5px; border-radius: 5px;")
         settings = load_settings()
-        api_key = settings.get('API', 'apiKey', fallback='')
+        api_key = settings['API'].get('apiKey', '') if 'API' in settings else ''
         self.api_key_input.setText(api_key)
         save_button = QPushButton("Save API Key", self)
         save_button.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
@@ -158,17 +191,20 @@ class SettingsPage(QWidget):
     def save_api_key(self):
         api_key = self.api_key_input.text()
         settings = load_settings()
-        if api_key != settings.get('API', 'apiKey'):
-            if validate_api_key(api_key):
-                settings.set('API', 'apiKey', api_key)
-                save_settings(settings)
-                self.error_label.setText("")
-                self.api_key_saved.emit()
-                self.main_window.show_main_page()
+        if settings:
+            if api_key != settings.get('API', {}).get('apiKey', ''):
+                if validate_api_key(api_key):
+                    settings.set('API', 'apiKey', api_key)
+                    save_settings(settings)
+                    self.error_label.setText("")
+                    self.api_key_saved.emit()
+                    self.main_window.show_main_page()
+                else:
+                    self.error_label.setText("Invalid API Key. Please try again.")
             else:
-                self.error_label.setText("Invalid API Key. Please try again.")
+                self.error_label.setText("API Key is already set.")
         else:
-            self.error_label.setText("API Key is already set.")
+            self.error_label.setText("Failed to load settings.")
     
     def go_back(self):
         self.main_window.show_main_page()
@@ -179,7 +215,7 @@ class OBSSettingsPage(QWidget):
         super().__init__()
         self.main_window = main_window
         title_label = QLabel("OBS WebSocket Settings", self)
-        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setAlignment(Qt.AlignHCenter)
         title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding-bottom: 20px; color: #FFFFFF;")
         settings = load_settings()
         self.server_ip_input = QLineEdit(self)
@@ -258,7 +294,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("BotOfTheSpecter OBS Connector")
-        self.setGeometry(100, 100, 500, 400)
+        self.setGeometry(100, 100, 500, 250)
         self.setWindowIcon(QIcon(os.path.join('assets', 'icons', 'app-icon.ico')))
         self.stack = QStackedWidget(self)
         self.setCentralWidget(self.stack)
