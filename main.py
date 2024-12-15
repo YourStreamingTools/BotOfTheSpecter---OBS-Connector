@@ -226,8 +226,13 @@ class SpecterWebSocketThread(QThread):
     def run(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.create_task(specter_websocket(self))
-        loop.run_forever()
+        task = loop.create_task(specter_websocket(self))
+        try:
+            loop.run_until_complete(task)
+        except asyncio.CancelledError:
+            pass
+        finally:
+            loop.close()
 
 # Thread for running OBS websocket
 class OBSWebSocketThread(QThread):
@@ -235,8 +240,13 @@ class OBSWebSocketThread(QThread):
     def run(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.create_task(obs_websocket(self))
-        loop.run_forever()
+        task = loop.create_task(obs_websocket(self))
+        try:
+            loop.run_until_complete(task)
+        except asyncio.CancelledError:
+            pass
+        finally:
+            loop.close()
 
 # MainWindow
 class MainWindow(QMainWindow):
