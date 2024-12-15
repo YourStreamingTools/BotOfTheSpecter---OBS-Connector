@@ -240,14 +240,18 @@ class MainWindow(QMainWindow):
         title_label = QLabel("BotOfTheSpecter OBS Connector", self)
         title_label.setAlignment(Qt.AlignHCenter)
         title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #FFFFFF;")
-        # Connection status label
-        self.connection_status_label = QLabel("Specter WebSocket Connection: ", self)
+        # Connection status labels
+        self.connection_status_label = QLabel("Specter WebSocket Connection: Not Connected", self)
         self.connection_status_label.setAlignment(Qt.AlignCenter)
         self.connection_status_label.setStyleSheet("font-size: 16px; color: #FF0000;")
-        # OBS connection status label
-        self.obs_connection_status_label = QLabel("OBS WebSocket Connection: ", self)
+        self.obs_connection_status_label = QLabel("OBS WebSocket Connection: Not Connected", self)
         self.obs_connection_status_label.setAlignment(Qt.AlignCenter)
         self.obs_connection_status_label.setStyleSheet("font-size: 16px; color: #FF0000;")
+        # Group the connection status labels
+        status_layout = QVBoxLayout()
+        status_layout.setSpacing(1)
+        status_layout.addWidget(self.connection_status_label)
+        status_layout.addWidget(self.obs_connection_status_label)
         # Buttons layout
         button_layout = QHBoxLayout()
         api_key_button = QPushButton("API Key", self)
@@ -258,10 +262,9 @@ class MainWindow(QMainWindow):
         obs_settings_button.clicked.connect(self.show_obs_settings_page)
         button_layout.addWidget(api_key_button)
         button_layout.addWidget(obs_settings_button)
-        # Add elements to the layout
+        # Add elements to the main layout
         main_layout.addWidget(title_label)
-        main_layout.addWidget(self.connection_status_label)
-        main_layout.addWidget(self.obs_connection_status_label)
+        main_layout.addLayout(status_layout)
         main_layout.addLayout(button_layout)
         self.main_page.setLayout(main_layout)
         self.stack.addWidget(self.main_page)
