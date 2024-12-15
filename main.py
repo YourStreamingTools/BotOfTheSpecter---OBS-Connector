@@ -53,23 +53,23 @@ def validate_api_key(api_key):
         return False
 
 # WebSocket connection event handler
-async def specter_websocket(async_thread):
+async def specter_websocket(specter_thread):
     specter_websocket_uri = "wss://websocket.botofthespecter.com"
     while True:
         try:
             await specterSocket.connect(specter_websocket_uri)
-            async_thread.connection_status.emit(True)
+            specter_thread.connection_status.emit(True)
             await specterSocket.wait()
             return True
         except socketio.exceptions.ConnectionError as e:
-            async_thread.connection_status.emit(False)
+            specter_thread.connection_status.emit(False)
             await asyncio.sleep(10)
         except Exception as e:
-            async_thread.connection_status.emit(False)
+            specter_thread.connection_status.emit(False)
             await asyncio.sleep(10)
 
 # Function to connect to OBS WebSocket server
-async def obs_websocket(async_thread):
+async def obs_websocket(obs_thread):
     settings = load_settings()
     server_ip = settings.get('OBS', 'server_ip', fallback='localhost')
     server_port = settings.get('OBS', 'server_port', fallback='4455')
@@ -78,36 +78,36 @@ async def obs_websocket(async_thread):
         try:
             obsSocket = obsws(server_ip, server_port, server_password)
             obsSocket.connect()
-            async_thread.obs_connection_status.emit(True)
+            obs_thread.obs_connection_status.emit(True)
             return True
         except obswebsocket.exceptions.ConnectionFailure as ConnectionFailure:
             print(f"OBS WebSocket Exception Error ConnectionFailure: {ConnectionFailure}")
-            async_thread.obs_connection_status.emit(False)
+            obs_thread.obs_connection_status.emit(False)
             await asyncio.sleep(10)
         except Exception:
-            async_thread.obs_connection_status.emit(False)
+            obs_thread.obs_connection_status.emit(False)
             await asyncio.sleep(10)
 
 # Handle successful registration or connection
 @specterSocket.event
 async def event_success(data):
     print("Received SUCCESS event from server.")
-    if hasattr(AsyncThread, 'connection_status'):
-        AsyncThread.connection_status.emit(True)
+    if hasattr(SpecterWebSocketThread, 'connection_status'):
+        SpecterWebSocketThread.connection_status.emit(True)
 
 # Handle server errors or failure to connect
 @specterSocket.event
 async def event_failure(data):
     print("Received FAILURE event from server.")
-    if hasattr(AsyncThread, 'connection_status'):
-        AsyncThread.connection_status.emit(False)
+    if hasattr(SpecterWebSocketThread, 'connection_status'):
+        SpecterWebSocketThread.connection_status.emit(False)
 
 # Handle disconnection
 @specterSocket.event
 async def disconnect():
     print("Disconnected from WebSocket server.")
-    if hasattr(AsyncThread, 'connection_status'):
-        AsyncThread.connection_status.emit(False)
+    if hasattr(SpecterWebSocketThread, 'connection_status'):
+        SpecterWebSocketThread.connection_status.emit(False)
 
 # Settings Window
 class SettingsPage(QWidget):
@@ -213,14 +213,21 @@ class OBSSettingsPage(QWidget):
     def go_back(self):
         self.main_window.show_main_page()
 
-# Thread for running asyncio code in the background
-class AsyncThread(QThread):
+# Thread for running Specter websocket
+class SpecterWebSocketThread(QThread):
     connection_status = pyqtSignal(bool)
-    obs_connection_status = pyqtSignal(bool)
     def run(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.create_task(specter_websocket(self))
+        loop.run_forever()
+
+# Thread for running OBS websocket
+class OBSWebSocketThread(QThread):
+    obs_connection_status = pyqtSignal(bool)
+    def run(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         loop.create_task(obs_websocket(self))
         loop.run_forever()
 
@@ -275,11 +282,13 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.settings_page)
         self.obs_settings_page = OBSSettingsPage(self)
         self.stack.addWidget(self.obs_settings_page)
-        # Start the AsyncThread and listen for connection status
-        self.async_thread = AsyncThread()
-        self.async_thread.connection_status.connect(self.update_connection_status)
-        self.async_thread.obs_connection_status.connect(self.update_obs_connection_status)
-        self.async_thread.start()
+        # Start separate threads for each WebSocket connection
+        self.specter_thread = SpecterWebSocketThread()
+        self.specter_thread.connection_status.connect(self.update_connection_status)
+        self.specter_thread.start()
+        self.obs_thread = OBSWebSocketThread()
+        self.obs_thread.obs_connection_status.connect(self.update_obs_connection_status)
+        self.obs_thread.start()
         # Load settings and display the appropriate page
         settings = load_settings()
         if not settings.get('API', 'apiKey'):
