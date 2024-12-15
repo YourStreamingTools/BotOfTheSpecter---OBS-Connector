@@ -14,7 +14,6 @@ from obswebsocket import requests as obsrequests
 
 # Paths for settings storage
 settings_dir = os.path.join(os.path.expanduser("~"), 'AppData', 'Local', 'YourStreamingTools', 'BotOfTheSpecter')
-icon_path = os.path.join(settings_dir, 'app-icon.ico')
 settings_path = os.path.join(settings_dir, 'OBSConnectorSettings.ini')
 
 # Globals
@@ -296,7 +295,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("BotOfTheSpecter OBS Connector")
         self.setGeometry(100, 100, 500, 250)
-        self.setWindowIcon(QIcon(icon_path))
+        self.setWindowIcon(QIcon("assets/icons/app-icon.ico"))
         self.stack = QStackedWidget(self)
         self.setCentralWidget(self.stack)
         # Main page layout
