@@ -12,7 +12,7 @@ import obswebsocket
 from obswebsocket import obsws
 from obswebsocket import requests as obsrequests
 
-# Paths for settings storage
+# Paths for storage
 settings_dir = os.path.join(os.path.expanduser("~"), 'AppData', 'Local', 'YourStreamingTools', 'BotOfTheSpecter')
 icon_path = os.path.join(settings_dir, 'app-icon.ico')
 settings_path = os.path.join(settings_dir, 'OBSConnectorSettings.ini')
@@ -24,6 +24,22 @@ VERSION = "1.0"
 # Ensure the settings directory exists
 if not os.path.exists(settings_dir):
     os.makedirs(settings_dir)
+
+# Download the icon file if it does not exist
+async def download_icon():
+    if not os.path.exists(icon_path):
+        url = 'https://cdn.botofthespecter.com/app-builds/assets/icons/app-icon.ico'
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        with open(icon_path, 'wb') as f:
+                            f.write(await response.read())
+        except Exception as e:
+            print(f"Error downloading icon: {e}")
+
+# Run the icon download
+asyncio.run(download_icon())
 
 # Load settings from the INI file
 def load_settings():
