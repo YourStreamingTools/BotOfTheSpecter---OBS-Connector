@@ -243,9 +243,11 @@ class MainWindow(QMainWindow):
         # Connection status label
         self.connection_status_label = QLabel("Specter WebSocket Connection: ", self)
         self.connection_status_label.setAlignment(Qt.AlignCenter)
+        self.connection_status_label.setStyleSheet("font-size: 16px; color: #FF0000;")
         # OBS connection status label
         self.obs_connection_status_label = QLabel("OBS WebSocket Connection: ", self)
         self.obs_connection_status_label.setAlignment(Qt.AlignCenter)
+        self.obs_connection_status_label.setStyleSheet("font-size: 16px; color: #FF0000;")
         # Buttons layout
         button_layout = QHBoxLayout()
         api_key_button = QPushButton("API Key", self)
