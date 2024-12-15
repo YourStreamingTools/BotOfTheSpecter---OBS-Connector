@@ -10,6 +10,7 @@ import socketio
 from socketio import AsyncClient as SocketClient
 import obswebsocket
 from obswebsocket import obsws
+from obswebsocket import requests as obsrequests
 
 # Paths for settings storage
 settings_dir = os.path.join(os.path.expanduser("~"), 'AppData', 'Local', 'YourStreamingTools', 'BotOfTheSpecterOBSConnector')
@@ -60,7 +61,6 @@ async def specter_websocket(specter_thread):
             await specterSocket.connect(specter_websocket_uri)
             specter_thread.connection_status.emit(True)
             await specterSocket.wait()
-            return True
         except socketio.exceptions.ConnectionError as e:
             specter_thread.connection_status.emit(False)
             await asyncio.sleep(10)
@@ -74,19 +74,26 @@ async def obs_websocket(obs_thread):
     server_ip = settings.get('OBS', 'server_ip', fallback='localhost')
     server_port = settings.get('OBS', 'server_port', fallback='4455')
     server_password = settings.get('OBS', 'server_password', fallback='')
+    cancellation_event = asyncio.Event()
     while True:
         try:
             obsSocket = obsws(server_ip, server_port, server_password)
             obsSocket.connect()
+            obsSocket.call(obsrequests.GetSceneList())  
             obs_thread.obs_connection_status.emit(True)
-            return True
+            await cancellation_event.wait()
+            if cancellation_event.is_set():
+                break
         except obswebsocket.exceptions.ConnectionFailure as ConnectionFailure:
             print(f"OBS WebSocket Exception Error ConnectionFailure: {ConnectionFailure}")
             obs_thread.obs_connection_status.emit(False)
             await asyncio.sleep(10)
-        except Exception:
+        except Exception as e:
+            print(f"OBS WebSocket Exception: {e}")
             obs_thread.obs_connection_status.emit(False)
             await asyncio.sleep(10)
+    if obsSocket.connected:
+        obsSocket.disconnect()
 
 # Handle successful registration or connection
 @specterSocket.event
