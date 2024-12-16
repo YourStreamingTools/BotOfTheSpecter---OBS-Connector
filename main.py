@@ -510,7 +510,7 @@ class MainWindow(QMainWindow):
             refresh_button.clicked.connect(lambda: self.load_logs(self.log_text_edit))
             log_layout.addWidget(refresh_button)
             self.log_window.setLayout(log_layout)
-            self.log_window.setWindowTitle("Logs")
+            self.log_window.setWindowTitle(f"{NAME} - Logs")
             self.log_window.resize(600, 400)
             self.log_window.setWindowIcon(QIcon(icon_path))
         self.load_logs(self.log_text_edit)
