@@ -3,7 +3,7 @@ import os
 import configparser
 import aiohttp
 import asyncio
-import urllib.parse
+import json
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QStackedWidget, QHBoxLayout
 from PyQt5.QtGui import QIcon, QColor
@@ -201,18 +201,19 @@ async def send_obs_event_to_specter(event):
             }
         API_TOKEN = load_settings()['API'].get('apiKey')
         params = {
-            'code': API_TOKEN,
-            'event': 'OBS_EVENT',
-            'data': simplified_event
+            'api_key': API_TOKEN,
+            'data': json.dumps(simplified_event)
         }
         async with aiohttp.ClientSession() as session:
-            encoded_params = urllib.parse.urlencode(params)
-            url = f'https://websocket.botofthespecter.com/notify?{encoded_params}'
-            async with session.get(url) as response:
-                if response.status == 200:
-                    print(f"HTTP event 'OBS_EVENT' sent successfully with params: {params}")
-                else:
-                    print(f"Failed to send HTTP event 'OBS_EVENT'. Status: {response.status}")
+            url = 'http://api.botofthespecter.com/OBS_EVENT'
+            try:
+                async with session.post(url, data=params) as response:
+                    if response.status == 200:
+                        print(f"HTTP event 'OBS_EVENT' sent successfully: {response.status}")
+                    else:
+                        print(f"Failed to send HTTP event 'OBS_EVENT'. Status: {response.status}")
+            except Exception as e:
+                print(f"Error forwarding event to FastAPI server: {e}")
     except Exception as e:
         print(f"Error sending OBS event to Specter: {e}")
 
