@@ -160,49 +160,10 @@ def on_event(event):
 
 async def send_obs_event_to_specter(event):
     try:
-        simplified_event = {}
-        event_type = getattr(event, 'update_type', None)
-        if event_type == 'SceneItemEnableStateChanged':
-            simplified_event = {
-                'event-name': event_type,
-                'scene-name': getattr(event, 'sceneName', None),
-                'source-name': getattr(event, 'itemName', None),
-                'item-enabled': getattr(event, 'itemEnabled', None)
-            }
-        elif event_type == 'SceneListChanged':
-            simplified_event = {
-                'event-name': event_type,
-                'scenes': [scene['name'] for scene in getattr(event, 'scenes', [])]
-            }
-        elif event_type == 'SceneCreated':
-            simplified_event = {
-                'event-name': event_type,
-                'scene-name': getattr(event, 'sceneName', None),
-                'sources': [source['sourceName'] for source in getattr(event, 'sources', [])]
-            }
-        elif event_type == 'SceneTransitionStarted':
-            simplified_event = {
-                'event-name': event_type,
-                'from-scene': getattr(event, 'from_scene', None),
-                'to-scene': getattr(event, 'to_scene', None),
-            }
-        elif event_type == 'SceneTransitionVideoEnded':
-            simplified_event = {
-                'event-name': event_type,
-            }
-        elif event_type == 'CurrentProgramSceneChanged':
-            simplified_event = {
-                'event-name': event_type,
-                'scene-name': getattr(event, 'scene_name', None)
-            }
-        elif event_type == 'SceneTransitionEnded':
-            simplified_event = {
-                'event-name': event_type,
-            }
         API_TOKEN = load_settings()['API'].get('apiKey')
         params = {
             'api_key': API_TOKEN,
-            'data': json.dumps(simplified_event)
+            'data': json.dumps(event)
         }
         async with aiohttp.ClientSession() as session:
             url = 'http://api.botofthespecter.com/OBS_EVENT'
