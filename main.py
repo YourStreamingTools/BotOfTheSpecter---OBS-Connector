@@ -177,7 +177,7 @@ async def send_obs_event_to_specter(event):
             return event_data
         event_data = extract_event_data(event)
         API_TOKEN = load_settings()['API'].get('apiKey')
-        payload = { 'data': json.dumps(event_data, default=custom_serializer)}
+        payload = {'data': json.dumps(event_data, default=custom_serializer)}
         async with aiohttp.ClientSession() as session:
             url = f'https://api.botofthespecter.com/OBS_EVENT?api_key={API_TOKEN}'
             try:
