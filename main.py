@@ -4,10 +4,13 @@ import configparser
 import aiohttp
 import asyncio
 import json
-import urllib.parse
+import logging
 from datetime import datetime
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
-from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QStackedWidget, QHBoxLayout
+from PyQt5.QtWidgets import (
+    QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout,
+    QLineEdit, QLabel, QStackedWidget, QHBoxLayout, QAction, QMessageBox, QTextEdit
+)
 from PyQt5.QtGui import QIcon, QColor
 import socketio
 from socketio import AsyncClient as SocketClient
@@ -17,16 +20,21 @@ from obswebsocket import requests as obsrequests
 
 # Paths for storage
 settings_dir = os.path.join(os.path.expanduser("~"), 'AppData', 'Local', 'YourStreamingTools', 'BotOfTheSpecter')
+os.makedirs(settings_dir, exist_ok=True)
 icon_path = os.path.join(settings_dir, 'app-icon.ico')
 settings_path = os.path.join(settings_dir, 'OBSConnectorSettings.ini')
+log_path = os.path.join(settings_dir, 'OBSConnectorLog.txt')
+
+# Configure logging
+logging.basicConfig(
+    filename=log_path,
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 # Globals
 specterSocket = SocketClient()
 VERSION = "1.0"
-
-# Ensure the settings directory exists
-if not os.path.exists(settings_dir):
-    os.makedirs(settings_dir)
 
 # Download the icon file if it does not exist
 async def download_icon():
@@ -39,7 +47,7 @@ async def download_icon():
                         with open(icon_path, 'wb') as f:
                             f.write(await response.read())
         except Exception as e:
-            print(f"Error downloading icon: {e}")
+            logging(f"Error downloading icon: {e}")
 
 # Run the icon download
 asyncio.run(download_icon())
@@ -114,9 +122,11 @@ async def validate_api_key(api_key):
             async with session.get('https://api.botofthespecter.com/checkkey', params={'api_key': api_key}) as response:
                 if response.status == 200:
                     data = await response.json()
+                    logging(f"API Key Validation: {data}")
                     return data.get('status') == 'Valid API Key'
         return False
     except aiohttp.exceptions.RequestException as e:
+        logging.error(f"API Key Validation Error: {e}")
         return False
 
 # WebSocket connection event handler
@@ -181,37 +191,39 @@ async def send_obs_event_to_specter(event):
         async with aiohttp.ClientSession() as session:
             url = f'https://api.botofthespecter.com/SEND_OBS_EVENT?api_key={API_TOKEN}'
             try:
-                # Use FormData to send form-encoded data
                 form_data = aiohttp.FormData()
                 for key, value in payload.items():
                     form_data.add_field(key, value)
                 async with session.post(url, data=form_data) as response:
                     if response.status == 200:
-                        print(f"HTTPS event 'SEND_OBS_EVENT' sent successfully: {response.status}")
+                        logging(f"HTTPS event 'SEND_OBS_EVENT' sent successfully: {response.status}")
                     else:
-                        print(f"Failed to send HTTPS event 'SEND_OBS_EVENT'. Status: {response.status}")
+                        logging(f"Failed to send HTTPS event 'SEND_OBS_EVENT'. Status: {response.status}")
                         response_text = await response.text()
-                        print("Response Body:", response_text)
+                        logging("Response Body:", response_text)
             except Exception as e:
-                print(f"Error forwarding event: {e}")
+                logging(f"Error forwarding event: {e}")
     except Exception as e:
-        print(f"Error sending OBS event to Specter: {e}")
+        logging(f"Error sending OBS event to Specter: {e}")
 
 # Handle successful registration or connection
 @specterSocket.event
 async def event_success(data):
+    logging(f"SpecterSocket Event: {data}")
     if hasattr(SpecterWebSocketThread, 'connection_status'):
         SpecterWebSocketThread.connection_status.emit(True)
 
 # Handle server errors or failure to connect
 @specterSocket.event
 async def event_failure(data):
+    logging(f"SpecterSocket Event: {data}")
     if hasattr(SpecterWebSocketThread, 'connection_status'):
         SpecterWebSocketThread.connection_status.emit(False)
 
 # Handle disconnection
 @specterSocket.event
 async def disconnect():
+    logging(f"SpecterSocket Event: Disconncted")
     if hasattr(SpecterWebSocketThread, 'connection_status'):
         SpecterWebSocketThread.connection_status.emit(False)
 
@@ -372,6 +384,8 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(QIcon(icon_path))
         self.stack = QStackedWidget(self)
         self.setCentralWidget(self.stack)
+        # Add menu bar
+        self.init_menu_bar()
         # Main page layout
         self.main_page = QWidget()
         main_layout = QVBoxLayout()
@@ -380,10 +394,10 @@ class MainWindow(QMainWindow):
         title_label.setAlignment(Qt.AlignHCenter)
         title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #FFFFFF;")
         # Connection status labels
-        self.connection_status_label = QLabel("Specter WebSocket Connection: Not Connected", self)
+        self.connection_status_label = QLabel("Specter WebSocket Connection: Connecting", self)
         self.connection_status_label.setAlignment(Qt.AlignCenter)
         self.connection_status_label.setStyleSheet("font-size: 16px; color: #FF0000;")
-        self.obs_connection_status_label = QLabel("OBS WebSocket Connection: Not Connected", self)
+        self.obs_connection_status_label = QLabel("OBS WebSocket Connection: Connecting", self)
         self.obs_connection_status_label.setAlignment(Qt.AlignCenter)
         self.obs_connection_status_label.setStyleSheet("font-size: 16px; color: #FF0000;")
         # Group the connection status labels
@@ -428,6 +442,94 @@ class MainWindow(QMainWindow):
         else:
             self.show_main_page()
 
+    def init_menu_bar(self):
+        menu_bar = self.menuBar()
+        menu_bar.setStyleSheet("""
+            QMenuBar {
+                background-color: #FFFFFF;
+                color: #000000;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QMenuBar::item {
+                background-color: transparent;
+                padding: 5px 10px;
+            }
+            QMenuBar::item:selected {
+                background-color: #007BFF;
+                color: #FFFFFF;
+            }
+            QMenu {
+                background-color: #FFFFFF;
+                color: #000000;
+                font-size: 14px;
+            }
+            QMenu::item {
+                padding: 5px 10px;
+            }
+            QMenu::item:selected {
+                background-color: #007BFF;
+                color: #FFFFFF;
+            }
+        """)
+        # File menu
+        file_menu = menu_bar.addMenu("File")
+        api_key_action = QAction("API Key", self)
+        api_key_action.triggered.connect(self.show_api_key_page)
+        obs_settings_action = QAction("OBS Settings", self)
+        obs_settings_action.triggered.connect(self.show_obs_settings_page)
+        exit_action = QAction("Exit", self)
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(api_key_action)
+        file_menu.addAction(obs_settings_action)
+        file_menu.addSeparator() # Spacer
+        file_menu.addAction(exit_action)
+        # View menu
+        view_menu = menu_bar.addMenu("View")
+        logs_action = QAction("Logs", self)
+        logs_action.triggered.connect(self.show_logs)
+        view_menu.addAction(logs_action)
+        # Help menu
+        help_menu = menu_bar.addMenu("Help")
+        about_action = QAction("About", self)
+        about_action.triggered.connect(self.show_about_dialog)
+        user_guide_action = QAction("User Guide", self)
+        user_guide_action.triggered.connect(self.open_user_guide)
+        help_menu.addAction(about_action)
+        help_menu.addAction(user_guide_action)
+
+    def show_logs(self):
+        log_window = QWidget()
+        log_layout = QVBoxLayout()
+        log_text_edit = QTextEdit(self)
+        log_text_edit.setReadOnly(True)
+        log_layout.addWidget(log_text_edit)
+        refresh_button = QPushButton("Refresh Logs", self)
+        refresh_button.clicked.connect(lambda: self.load_logs(log_text_edit))
+        log_layout.addWidget(refresh_button)
+        log_window.setLayout(log_layout)
+        log_window.setWindowTitle("Logs")
+        log_window.resize(600, 400)
+        log_window.show()
+        self.load_logs(log_text_edit)
+
+    def load_logs(self, log_text_edit):
+        try:
+            with open(log_path, "r") as log_file:
+                log_content = log_file.read()
+                log_text_edit.setPlainText(log_content)
+        except Exception as e:
+            QMessageBox.information(self, "Logs", f"Error loading log file: {e}")
+
+    def open_user_guide(self):
+        QMessageBox.information(self, "User Guide", "Open the user guide or documentation.")
+
+    def show_about_dialog(self):
+        QMessageBox.information(self, "About",
+            f"BotOfTheSpecter OBS Connector\nVersion {VERSION}\nDeveloped by: gfaUnDead\n"
+            f""
+        )
+
     def show_api_key_page(self):
         self.stack.setCurrentWidget(self.settings_page)
 
@@ -464,6 +566,5 @@ if __name__ == "__main__":
     palette.setColor(palette.ToolTipBase, QColor("#FFFFFF"))
     palette.setColor(palette.ToolTipText, QColor("#000000"))
     app.setPalette(palette)
-    window = MainWindow()
-    window.show()
+    MainWindow().show()
     sys.exit(app.exec_())
