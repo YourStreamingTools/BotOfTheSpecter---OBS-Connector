@@ -3,6 +3,7 @@ import os
 import configparser
 import aiohttp
 import asyncio
+import urllib.parse
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QStackedWidget, QHBoxLayout
 from PyQt5.QtGui import QIcon, QColor
@@ -139,8 +140,8 @@ async def obs_websocket(obs_thread):
             server_ip, server_port, server_password = await obs_websocket_settings()
             obsSocket = obsws(server_ip, server_port, server_password)
             obsSocket.connect()
-            obsSocket.call(obsrequests.GetSceneList())  
             obs_thread.obs_connection_status.emit(True)
+            obsSocket.register(on_event)
             await cancellation_event.wait()
             if cancellation_event.is_set():
                 break
@@ -150,8 +151,70 @@ async def obs_websocket(obs_thread):
         except Exception as e:
             obs_thread.obs_connection_status.emit(False)
             await asyncio.sleep(10)
-    if obsSocket.connected:
-        obsSocket.disconnect()
+        if obsSocket.connected:
+            obsSocket.disconnect()
+
+# Handle OBS events and send them to Specter server
+def on_event(event):
+    asyncio.run(send_obs_event_to_specter(event))
+
+async def send_obs_event_to_specter(event):
+    try:
+        simplified_event = {}
+        event_type = getattr(event, 'update_type', None)
+        if event_type == 'SceneItemEnableStateChanged':
+            simplified_event = {
+                'event-name': event_type,
+                'scene-name': getattr(event, 'sceneName', None),
+                'source-name': getattr(event, 'itemName', None),
+                'item-enabled': getattr(event, 'itemEnabled', None)
+            }
+        elif event_type == 'SceneListChanged':
+            simplified_event = {
+                'event-name': event_type,
+                'scenes': [scene['name'] for scene in getattr(event, 'scenes', [])]
+            }
+        elif event_type == 'SceneCreated':
+            simplified_event = {
+                'event-name': event_type,
+                'scene-name': getattr(event, 'sceneName', None),
+                'sources': [source['sourceName'] for source in getattr(event, 'sources', [])]
+            }
+        elif event_type == 'SceneTransitionStarted':
+            simplified_event = {
+                'event-name': event_type,
+                'from-scene': getattr(event, 'from_scene', None),
+                'to-scene': getattr(event, 'to_scene', None),
+            }
+        elif event_type == 'SceneTransitionVideoEnded':
+            simplified_event = {
+                'event-name': event_type,
+            }
+        elif event_type == 'CurrentProgramSceneChanged':
+            simplified_event = {
+                'event-name': event_type,
+                'scene-name': getattr(event, 'scene_name', None)
+            }
+        elif event_type == 'SceneTransitionEnded':
+            simplified_event = {
+                'event-name': event_type,
+            }
+        API_TOKEN = load_settings()['API'].get('apiKey')
+        params = {
+            'code': API_TOKEN,
+            'event': 'OBS_EVENT',
+            'data': simplified_event
+        }
+        async with aiohttp.ClientSession() as session:
+            encoded_params = urllib.parse.urlencode(params)
+            url = f'https://websocket.botofthespecter.com/notify?{encoded_params}'
+            async with session.get(url) as response:
+                if response.status == 200:
+                    print(f"HTTP event 'OBS_EVENT' sent successfully with params: {params}")
+                else:
+                    print(f"Failed to send HTTP event 'OBS_EVENT'. Status: {response.status}")
+    except Exception as e:
+        print(f"Error sending OBS event to Specter: {e}")
 
 # Handle successful registration or connection
 @specterSocket.event
@@ -209,17 +272,30 @@ class SettingsPage(QWidget):
         api_key = self.api_key_input.text()
         settings = load_settings()
         if settings:
-            if api_key != settings.get('API', {}).get('apiKey', ''):
-                if validate_api_key(api_key):
-                    settings.set('API', 'apiKey', api_key)
-                    save_settings(settings)
-                    self.error_label.setText("")
-                    self.api_key_saved.emit()
-                    self.main_window.show_main_page()
+            try:
+                if api_key != settings['API'].get('apiKey', ''):
+                    if asyncio.run(validate_api_key(api_key)):
+                        settings.set('API', 'apiKey', api_key)
+                        save_settings(settings)
+                        self.error_label.setText("")
+                        self.api_key_saved.emit()
+                        self.main_window.show_main_page()
+                    else:
+                        self.error_label.setText("Invalid API Key. Please try again.")
                 else:
-                    self.error_label.setText("Invalid API Key. Please try again.")
-            else:
-                self.error_label.setText("API Key is already set.")
+                    self.error_label.setText("API Key is already set.")
+            except AttributeError:
+                if api_key != settings['API'].get('apikey', ''):
+                    if asyncio.run(validate_api_key(api_key)):
+                        settings.set('API', 'apiKey', api_key)
+                        save_settings(settings)
+                        self.error_label.setText("")
+                        self.api_key_saved.emit()
+                        self.main_window.show_main_page()
+                    else:
+                        self.error_label.setText("Invalid API Key. Please try again.")
+                else:
+                    self.error_label.setText("API Key is already set.")
         else:
             self.error_label.setText("Failed to load settings.")
     
