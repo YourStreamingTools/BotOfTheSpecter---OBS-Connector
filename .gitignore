@@ -1,8 +1,6 @@
 
 /build
 /dist
-build.txt
-build.bat
 *.spec
 *.exe
 *.rc
