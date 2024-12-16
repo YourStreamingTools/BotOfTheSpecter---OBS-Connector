@@ -35,6 +35,7 @@ logging.basicConfig(
 # Globals
 specterSocket = SocketClient()
 VERSION = "1.0"
+NAME = "BotOftheSpecter OBS Connector"
 
 # Download the icon file if it does not exist
 async def download_icon():
@@ -379,7 +380,7 @@ class OBSWebSocketThread(QThread):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("BotOfTheSpecter OBS Connector")
+        self.setWindowTitle(NAME)
         self.setGeometry(100, 100, 500, 250)
         self.setWindowIcon(QIcon(icon_path))
         self.stack = QStackedWidget(self)
@@ -390,7 +391,7 @@ class MainWindow(QMainWindow):
         self.main_page = QWidget()
         main_layout = QVBoxLayout()
         # Title label
-        title_label = QLabel("BotOfTheSpecter OBS Connector", self)
+        title_label = QLabel(NAME, self)
         title_label.setAlignment(Qt.AlignHCenter)
         title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #FFFFFF;")
         # Connection status labels
@@ -499,19 +500,21 @@ class MainWindow(QMainWindow):
         help_menu.addAction(user_guide_action)
 
     def show_logs(self):
-        log_window = QWidget()
-        log_layout = QVBoxLayout()
-        log_text_edit = QTextEdit(self)
-        log_text_edit.setReadOnly(True)
-        log_layout.addWidget(log_text_edit)
-        refresh_button = QPushButton("Refresh Logs", self)
-        refresh_button.clicked.connect(lambda: self.load_logs(log_text_edit))
-        log_layout.addWidget(refresh_button)
-        log_window.setLayout(log_layout)
-        log_window.setWindowTitle("Logs")
-        log_window.resize(600, 400)
-        log_window.show()
+        if not hasattr(self, 'log_window') or self.log_window is None:
+            self.log_window = QWidget()
+            log_layout = QVBoxLayout()
+            log_text_edit = QTextEdit(self)
+            log_text_edit.setReadOnly(True)
+            log_layout.addWidget(log_text_edit)
+            refresh_button = QPushButton("Refresh Logs", self)
+            refresh_button.clicked.connect(lambda: self.load_logs(log_text_edit))
+            log_layout.addWidget(refresh_button)
+            self.log_window.setLayout(log_layout)
+            self.log_window.setWindowTitle("Logs")
+            self.log_window.resize(600, 400)
+            self.log_window.setWindowIcon(QIcon(icon_path))
         self.load_logs(log_text_edit)
+        self.log_window.show()
 
     def load_logs(self, log_text_edit):
         try:
@@ -519,6 +522,7 @@ class MainWindow(QMainWindow):
                 log_content = log_file.read()
                 log_text_edit.setPlainText(log_content)
         except Exception as e:
+            logging(f"Error in loading logs: {e}")
             QMessageBox.information(self, "Logs", f"Error loading log file: {e}")
 
     def open_user_guide(self):
@@ -526,7 +530,7 @@ class MainWindow(QMainWindow):
 
     def show_about_dialog(self):
         QMessageBox.information(self, "About",
-            f"BotOfTheSpecter OBS Connector\nVersion {VERSION}\nDeveloped by: gfaUnDead\n"
+            f"{NAME}\nVersion {VERSION}\nDeveloped by: gfaUnDead\n"
             f""
         )
 
