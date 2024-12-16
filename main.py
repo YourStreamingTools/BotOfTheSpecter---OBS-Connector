@@ -179,7 +179,7 @@ async def send_obs_event_to_specter(event):
         API_TOKEN = load_settings()['API'].get('apiKey')
         payload = {'data': json.dumps(event_data, default=custom_serializer)}
         async with aiohttp.ClientSession() as session:
-            url = f'https://api.botofthespecter.com/OBS_EVENT?api_key={API_TOKEN}'
+            url = f'https://api.botofthespecter.com/SEND_OBS_EVENT?api_key={API_TOKEN}'
             try:
                 # Use FormData to send form-encoded data
                 form_data = aiohttp.FormData()
@@ -187,9 +187,9 @@ async def send_obs_event_to_specter(event):
                     form_data.add_field(key, value)
                 async with session.post(url, data=form_data) as response:
                     if response.status == 200:
-                        print(f"HTTPS event 'OBS_EVENT' sent successfully: {response.status}")
+                        print(f"HTTPS event 'SEND_OBS_EVENT' sent successfully: {response.status}")
                     else:
-                        print(f"Failed to send HTTPS event 'OBS_EVENT'. Status: {response.status}")
+                        print(f"Failed to send HTTPS event 'SEND_OBS_EVENT'. Status: {response.status}")
                         response_text = await response.text()
                         print("Response Body:", response_text)
             except Exception as e:
