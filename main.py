@@ -4,6 +4,7 @@ import configparser
 import aiohttp
 import asyncio
 import json
+import urllib.parse
 from datetime import datetime
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QStackedWidget, QHBoxLayout
@@ -175,19 +176,27 @@ async def send_obs_event_to_specter(event):
                 event_data = str(event)
             return event_data
         event_data = extract_event_data(event)
+        print("Extracted Event Data:", event_data)
         API_TOKEN = load_settings()['API'].get('apiKey')
-        params = {
+        payload = {
             'api_key': API_TOKEN,
             'data': json.dumps(event_data, default=custom_serializer)
         }
+        print("Payload:", payload)
         async with aiohttp.ClientSession() as session:
             url = 'https://api.botofthespecter.com/OBS_EVENT'
             try:
-                async with session.post(url, data=params) as response:
+                # Use FormData to send form-encoded data
+                form_data = aiohttp.FormData()
+                for key, value in payload.items():
+                    form_data.add_field(key, value)
+                async with session.post(url, data=form_data) as response:
                     if response.status == 200:
                         print(f"HTTPS event 'OBS_EVENT' sent successfully: {response.status}")
                     else:
                         print(f"Failed to send HTTPS event 'OBS_EVENT'. Status: {response.status}")
+                        response_text = await response.text()
+                        print("Response Body:", response_text)
             except Exception as e:
                 print(f"Error forwarding event: {e}")
     except Exception as e:
