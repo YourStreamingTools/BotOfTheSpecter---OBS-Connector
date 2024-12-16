@@ -503,17 +503,17 @@ class MainWindow(QMainWindow):
         if not hasattr(self, 'log_window') or self.log_window is None:
             self.log_window = QWidget()
             log_layout = QVBoxLayout()
-            log_text_edit = QTextEdit(self)
-            log_text_edit.setReadOnly(True)
-            log_layout.addWidget(log_text_edit)
+            self.log_text_edit = QTextEdit(self)
+            self.log_text_edit.setReadOnly(True)
+            log_layout.addWidget(self.log_text_edit)
             refresh_button = QPushButton("Refresh Logs", self)
-            refresh_button.clicked.connect(lambda: self.load_logs(log_text_edit))
+            refresh_button.clicked.connect(lambda: self.load_logs(self.log_text_edit))
             log_layout.addWidget(refresh_button)
             self.log_window.setLayout(log_layout)
             self.log_window.setWindowTitle("Logs")
             self.log_window.resize(600, 400)
             self.log_window.setWindowIcon(QIcon(icon_path))
-        self.load_logs(log_text_edit)
+        self.load_logs(self.log_text_edit)
         self.log_window.show()
 
     def load_logs(self, log_text_edit):
