@@ -4,6 +4,7 @@ import configparser
 import aiohttp
 import asyncio
 import json
+from datetime import datetime
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from PyQt5.QtWidgets import QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QStackedWidget, QHBoxLayout
 from PyQt5.QtGui import QIcon, QColor
@@ -160,21 +161,35 @@ def on_event(event):
 
 async def send_obs_event_to_specter(event):
     try:
+        def custom_serializer(obj):
+            if isinstance(obj, datetime):
+                return obj.isoformat()
+            raise TypeError(f"Type {type(obj)} not serializable")
+        def extract_event_data(event):
+            event_data = {}
+            if isinstance(event, dict):
+                return event
+            elif hasattr(event, '__dict__'):
+                event_data = vars(event)
+            else:
+                event_data = str(event)
+            return event_data
+        event_data = extract_event_data(event)
         API_TOKEN = load_settings()['API'].get('apiKey')
         params = {
             'api_key': API_TOKEN,
-            'data': json.dumps(event)
+            'data': json.dumps(event_data, default=custom_serializer)
         }
         async with aiohttp.ClientSession() as session:
-            url = 'http://api.botofthespecter.com/OBS_EVENT'
+            url = 'https://api.botofthespecter.com/OBS_EVENT'
             try:
                 async with session.post(url, data=params) as response:
                     if response.status == 200:
-                        print(f"HTTP event 'OBS_EVENT' sent successfully: {response.status}")
+                        print(f"HTTPS event 'OBS_EVENT' sent successfully: {response.status}")
                     else:
-                        print(f"Failed to send HTTP event 'OBS_EVENT'. Status: {response.status}")
+                        print(f"Failed to send HTTPS event 'OBS_EVENT'. Status: {response.status}")
             except Exception as e:
-                print(f"Error forwarding event to FastAPI server: {e}")
+                print(f"Error forwarding event: {e}")
     except Exception as e:
         print(f"Error sending OBS event to Specter: {e}")
 
