@@ -479,12 +479,15 @@ class MainWindow(QMainWindow):
         """)
         # File menu
         file_menu = menu_bar.addMenu("File")
+        home_key_action = QAction("Home", self)
+        home_key_action.triggered.connect(self.show_main_page)
         api_key_action = QAction("API Key", self)
         api_key_action.triggered.connect(self.show_api_key_page)
         obs_settings_action = QAction("OBS Settings", self)
         obs_settings_action.triggered.connect(self.show_obs_settings_page)
         exit_action = QAction("Exit", self)
         exit_action.triggered.connect(self.close)
+        file_menu.addAction(home_key_action)
         file_menu.addAction(api_key_action)
         file_menu.addAction(obs_settings_action)
         file_menu.addSeparator() # Spacer
