@@ -48,7 +48,7 @@ async def download_icon():
                         with open(icon_path, 'wb') as f:
                             f.write(await response.read())
         except Exception as e:
-            logging(f"Error downloading icon: {e}")
+            logging.info(f"Error downloading icon: {e}")
 
 # Run the icon download
 asyncio.run(download_icon())
@@ -123,7 +123,7 @@ async def validate_api_key(api_key):
             async with session.get('https://api.botofthespecter.com/checkkey', params={'api_key': api_key}) as response:
                 if response.status == 200:
                     data = await response.json()
-                    logging(f"API Key Validation: {data}")
+                    logging.info(f"API Key Validation: {data}")
                     return data.get('status') == 'Valid API Key'
         return False
     except aiohttp.exceptions.RequestException as e:
@@ -201,34 +201,34 @@ async def send_obs_event_to_specter(event):
                     form_data.add_field(key, value)
                 async with session.post(url, data=form_data) as response:
                     if response.status == 200:
-                        logging(f"HTTPS event 'SEND_OBS_EVENT' sent successfully: {response.status}")
+                        logging.info(f"HTTPS event 'SEND_OBS_EVENT' sent successfully: {response.status}")
                     else:
-                        logging(f"Failed to send HTTPS event 'SEND_OBS_EVENT'. Status: {response.status}")
+                        logging.info(f"Failed to send HTTPS event 'SEND_OBS_EVENT'. Status: {response.status}")
                         response_text = await response.text()
-                        logging("Response Body:", response_text)
+                        logging.info("Response Body:", response_text)
             except Exception as e:
-                logging(f"Error forwarding event: {e}")
+                logging.info(f"Error forwarding event: {e}")
     except Exception as e:
-        logging(f"Error sending OBS event to Specter: {e}")
+        logging.info(f"Error sending OBS event to Specter: {e}")
 
 # Handle successful registration or connection
 @specterSocket.event
 async def event_success(data):
-    logging(f"SpecterSocket Event: {data}")
+    logging.info(f"SpecterSocket Event: {data}")
     if hasattr(SpecterWebSocketThread, 'connection_status'):
         SpecterWebSocketThread.connection_status.emit(True)
 
 # Handle server errors or failure to connect
 @specterSocket.event
 async def event_failure(data):
-    logging(f"SpecterSocket Event: {data}")
+    logging.info(f"SpecterSocket Event: {data}")
     if hasattr(SpecterWebSocketThread, 'connection_status'):
         SpecterWebSocketThread.connection_status.emit(False)
 
 # Handle disconnection
 @specterSocket.event
 async def disconnect():
-    logging(f"SpecterSocket Event: Disconncted")
+    logging.info(f"SpecterSocket Event: Disconncted")
     if hasattr(SpecterWebSocketThread, 'connection_status'):
         SpecterWebSocketThread.connection_status.emit(False)
 
@@ -531,7 +531,7 @@ class MainWindow(QMainWindow):
                 log_text_edit.setPlainText(log_content)
                 log_text_edit.moveCursor(QTextCursor.End)
         except Exception as e:
-            logging(f"Error in loading logs: {e}")
+            logging.info(f"Error in loading logs: {e}")
             QMessageBox.information(self, f"{NAME} - Logs", f"Error loading log file: {e}")
 
     def open_user_guide(self):
