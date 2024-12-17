@@ -192,11 +192,11 @@ async def send_obs_event_to_specter(event):
             if (event_data.get("name") == "SceneItemEnableStateChanged" and isinstance(event_data.get("datain"), dict)):
                 datain = event_data["datain"]
                 if "sceneItemEnabled" in datain:
-                    return None
-            return event_data
-        event_data = extract_event_data(event)
+                    return "SceneItemEnableStateChanged", None
+            return None, event_data
+        event_name, event_data = extract_event_data(event)
         if event_data is None:
-            logging.info("Event filtered out and not sent.")
+            logging.info(f"Event \"{event_name}\" filtered out and not sent.")
             return  # Skip sending request
         API_TOKEN = load_settings()['API'].get('apiKey')
         payload = {'data': json.dumps(event_data, default=custom_serializer)}
