@@ -184,13 +184,20 @@ async def send_obs_event_to_specter(event):
         def extract_event_data(event):
             event_data = {}
             if isinstance(event, dict):
-                return event
+                event_data = event
             elif hasattr(event, '__dict__'):
                 event_data = vars(event)
             else:
                 event_data = str(event)
+            if (event_data.get("name") == "SceneItemEnableStateChanged" and isinstance(event_data.get("datain"), dict)):
+                datain = event_data["datain"]
+                if "sceneItemEnabled" in datain:
+                    return None
             return event_data
         event_data = extract_event_data(event)
+        if event_data is None:
+            logging.info("Event filtered out and not sent.")
+            return  # Skip sending request
         API_TOKEN = load_settings()['API'].get('apiKey')
         payload = {'data': json.dumps(event_data, default=custom_serializer)}
         async with aiohttp.ClientSession() as session:
