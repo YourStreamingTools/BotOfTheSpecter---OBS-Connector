@@ -138,11 +138,12 @@ async def specter_websocket(specter_thread):
             await specterSocket.connect(specter_websocket_uri)
             specter_thread.connection_status.emit(True)
             await specterSocket.wait()
-        except socketio.exceptions.ConnectionError as e:
-            logging.error(f"SpecterWebSocket Error: {e}")
+        except socketio.exceptions.ConnectionError as ConnectionError:
+            logging.error(f"SpecterWebSocket ConnectionError Error: {ConnectionError}")
             specter_thread.connection_status.emit(False)
             await asyncio.sleep(10)
         except Exception as e:
+            logging.error(f"SpecterWebSocket Error: {e}")
             specter_thread.connection_status.emit(False)
             await asyncio.sleep(10)
 
