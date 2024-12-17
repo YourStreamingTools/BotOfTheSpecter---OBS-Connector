@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
     QWidget, QApplication, QMainWindow, QPushButton, QVBoxLayout, QFormLayout,
     QLineEdit, QLabel, QStackedWidget, QHBoxLayout, QAction, QMessageBox, QTextEdit
 )
-from PyQt5.QtGui import QIcon, QColor
+from PyQt5.QtGui import QIcon, QColor, QTextCursor
 import socketio
 from socketio import AsyncClient as SocketClient
 import obswebsocket
@@ -505,6 +505,7 @@ class MainWindow(QMainWindow):
             log_layout = QVBoxLayout()
             self.log_text_edit = QTextEdit(self)
             self.log_text_edit.setReadOnly(True)
+            self.log_text_edit.setStyleSheet("color: #FFFFFF; background-color: #333333; border: none;")
             log_layout.addWidget(self.log_text_edit)
             refresh_button = QPushButton("Refresh Logs", self)
             refresh_button.clicked.connect(lambda: self.load_logs(self.log_text_edit))
@@ -521,18 +522,31 @@ class MainWindow(QMainWindow):
             with open(log_path, "r") as log_file:
                 log_content = log_file.read()
                 log_text_edit.setPlainText(log_content)
+                log_text_edit.moveCursor(QTextCursor.End)
         except Exception as e:
             logging(f"Error in loading logs: {e}")
-            QMessageBox.information(self, "Logs", f"Error loading log file: {e}")
+            QMessageBox.information(self, f"{NAME} - Logs", f"Error loading log file: {e}")
 
     def open_user_guide(self):
         QMessageBox.information(self, "User Guide", "Open the user guide or documentation.")
 
     def show_about_dialog(self):
-        QMessageBox.information(self, "About",
-            f"{NAME}\nVersion {VERSION}\nDeveloped by: gfaUnDead\n"
-            f""
-        )
+        if not hasattr(self, 'about_window') or self.about_window is None:
+            self.about_window = QWidget()
+            about_layout = QVBoxLayout()
+            label_text = f"{NAME}\nVersion {VERSION}\nDeveloped by: gfaUnDead"
+            about_text = QLabel(label_text, self)
+            about_text.setStyleSheet("color: #FFFFFF; background-color: #333333; font-size: 16px; padding: 10px;")
+            about_layout.addWidget(about_text)
+            close_button = QPushButton("Close", self)
+            close_button.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
+            close_button.clicked.connect(self.about_window.close)
+            about_layout.addWidget(close_button)
+            self.about_window.setLayout(about_layout)
+            self.about_window.setWindowTitle(f"{NAME} - About")
+            self.about_window.resize(400, 200)
+            self.about_window.setWindowIcon(QIcon(icon_path))
+        self.about_window.show()
 
     def show_api_key_page(self):
         self.stack.setCurrentWidget(self.settings_page)
