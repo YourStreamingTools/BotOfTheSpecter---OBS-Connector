@@ -139,6 +139,7 @@ async def specter_websocket(specter_thread):
             specter_thread.connection_status.emit(True)
             await specterSocket.wait()
         except socketio.exceptions.ConnectionError as e:
+            logging.error(f"SpecterWebSocket Error: {e}")
             specter_thread.connection_status.emit(False)
             await asyncio.sleep(10)
         except Exception as e:
@@ -159,9 +160,11 @@ async def obs_websocket(obs_thread):
             if cancellation_event.is_set():
                 break
         except obswebsocket.exceptions.ConnectionFailure as ConnectionFailure:
+            logging.error(f"obsWebSocket ConnectionFailure: {ConnectionFailure}")
             obs_thread.obs_connection_status.emit(False)
             await asyncio.sleep(10)
         except Exception as e:
+            logging.error(f"obsWebSocket Error: {e}")
             obs_thread.obs_connection_status.emit(False)
             await asyncio.sleep(10)
         if obsSocket.connected:
