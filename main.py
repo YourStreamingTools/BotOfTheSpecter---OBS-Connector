@@ -240,7 +240,7 @@ async def disconnect():
         SpecterWebSocketThread.connection_status.emit(False)
 
 # Settings Window
-class SettingsPage(QWidget):
+class APISettingsPage(QWidget):
     api_key_saved = pyqtSignal()
 
     def __init__(self, main_window):
@@ -435,7 +435,7 @@ class MainWindow(QMainWindow):
         self.main_page.setLayout(main_layout)
         self.stack.addWidget(self.main_page)
         # Settings pages
-        self.settings_page = SettingsPage(self)
+        self.settings_page = APISettingsPage(self)
         self.settings_page.api_key_saved.connect(self.show_main_page)
         self.stack.addWidget(self.settings_page)
         self.obs_settings_page = OBSSettingsPage(self)
